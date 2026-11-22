@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 964 252" width="964" height="252" role="img" aria-label="PlateRelay 系统架构">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; text-anchor: middle; dominant-baseline: central; }
+  </style>
+
+  <!-- Main horizontal nodes -->
+  <rect x="16" y="33" width="128" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="80" y="60" font-size="14" font-weight="500" fill="#ffffff">浏览器</text>
+
+  <rect x="284" y="23" width="122" height="74" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="345" y="60" font-size="14" font-weight="500" fill="#ffffff">面板端</text>
+
+  <rect x="630" y="33" width="114" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="687" y="60" font-size="14" font-weight="500" fill="#ffffff">Daemon</text>
+
+  <rect x="852" y="33" width="96" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="900" y="60" font-size="14" font-weight="500" fill="#ffffff">3D 打印机</text>
+
+  <!-- Arrows -->
+  <g fill="none" stroke="#94a3b8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 浏览器 <-> 面板端 -->
+    <path d="M 150 60 L 173 60 M 156 54 L 150 60 L 156 66" />
+    <path d="M 255 60 L 278 60 M 272 54 L 278 60 L 272 66" />
+
+    <!-- 面板端 <-> Daemon -->
+    <path d="M 412 60 L 454 60 M 418 54 L 412 60 L 418 66" />
+    <path d="M 582 60 L 624 60 M 618 54 L 624 60 L 618 66" />
+
+    <!-- Daemon <-> 3D 打印机 -->
+    <path d="M 750 60 L 768 60 M 756 54 L 750 60 L 756 66" />
+    <path d="M 828 60 L 846 60 M 840 54 L 846 60 L 840 66" />
+
+    <!-- Vertical bidirectional arrow: 面板端 <-> PostgreSQL / S3 -->
+    <path d="M 345 103 L 345 157 M 339 109 L 345 103 L 351 109 M 339 151 L 345 157 L 351 151" />
+  </g>
+
+  <!-- Edge labels -->
+  <text x="214" y="60" font-size="12.5" fill="#ffffff">HTTPS / SSE</text>
+  <text x="518" y="51" font-size="12.5" fill="#ffffff">WSS</text>
+  <text x="518" y="69" font-size="12.5" fill="#ffffff">(Daemon 主动连接)</text>
+  <text x="798" y="60" font-size="12.5" fill="#ffffff">设备协议</text>
+
+  <!-- Storage cylinder -->
+  <path d="M 271 176 L 271 222 A 74 13 0 0 0 419 222 L 419 176 Z" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <ellipse cx="345" cy="176" rx="74" ry="13" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <text x="345" y="207" font-size="14" font-weight="500" fill="#ffffff">PostgreSQL / S3</text>
+</svg>

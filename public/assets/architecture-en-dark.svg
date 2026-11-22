@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 964 252" width="964" height="252" role="img" aria-label="PlateRelay System Architecture">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-anchor: middle; dominant-baseline: central; }
+  </style>
+
+  <!-- Main horizontal nodes -->
+  <rect x="16" y="33" width="116" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="74" y="60" font-size="14" font-weight="500" fill="#ffffff">Browser</text>
+
+  <rect x="268" y="23" width="120" height="74" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="328" y="60" font-size="14" font-weight="500" fill="#ffffff">Panel</text>
+
+  <rect x="600" y="33" width="106" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="653" y="60" font-size="14" font-weight="500" fill="#ffffff">Daemon</text>
+
+  <rect x="842" y="33" width="106" height="54" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="895" y="60" font-size="14" font-weight="500" fill="#ffffff">3D Printer</text>
+
+  <!-- Arrows -->
+  <g fill="none" stroke="#94a3b8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Browser <-> Panel -->
+    <path d="M 138 60 L 159 60 M 144 54 L 138 60 L 144 66" />
+    <path d="M 241 60 L 262 60 M 256 54 L 262 60 L 256 66" />
+
+    <!-- Panel <-> Daemon -->
+    <path d="M 394 60 L 432 60 M 400 54 L 394 60 L 400 66" />
+    <path d="M 556 60 L 594 60 M 588 54 L 594 60 L 588 66" />
+
+    <!-- Daemon <-> 3D Printer -->
+    <path d="M 712 60 L 732 60 M 718 54 L 712 60 L 718 66" />
+    <path d="M 816 60 L 836 60 M 830 54 L 836 60 L 830 66" />
+
+    <!-- Vertical bidirectional arrow: Panel <-> PostgreSQL / S3 -->
+    <path d="M 328 103 L 328 157 M 322 109 L 328 103 L 334 109 M 322 151 L 328 157 L 334 151" />
+  </g>
+
+  <!-- Edge labels -->
+  <text x="200" y="60" font-size="12.5" fill="#ffffff">HTTPS / SSE</text>
+  <text x="494" y="51" font-size="12.5" fill="#ffffff">WSS</text>
+  <text x="494" y="69" font-size="12.5" fill="#ffffff">(Daemon-initiated)</text>
+  <text x="774" y="60" font-size="12.5" fill="#ffffff">LAN Protocol</text>
+
+  <!-- Storage cylinder -->
+  <path d="M 254 176 L 254 222 A 74 13 0 0 0 402 222 L 402 176 Z" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <ellipse cx="328" cy="176" rx="74" ry="13" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <text x="328" y="207" font-size="14" font-weight="500" fill="#ffffff">PostgreSQL / S3</text>
+</svg>
