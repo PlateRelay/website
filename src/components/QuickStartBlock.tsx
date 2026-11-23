@@ -74,8 +74,8 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--pr-line)] bg-[var(--pr-sub)] px-4 py-2.5">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--pr-line)] bg-[var(--pr-sub)] px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           <Terminal className="mr-1 h-3.5 w-3.5 text-[var(--pr-muted)]" />
           {t.tabs.map((item) => (
             <button
@@ -85,7 +85,7 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
                 setTab(item.id);
                 setCopied(false);
               }}
-              className={`cursor-pointer rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`cursor-pointer whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 tab === item.id
                   ? 'border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]'
                   : 'bg-transparent text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
@@ -99,17 +99,18 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
         <button
           type="button"
           onClick={handleCopy}
+          aria-label={copied ? t.copied : t.copy}
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--pr-line)] bg-[var(--pr-card)] px-2.5 py-1 text-[11px] font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
         >
           {copied ? (
             <>
               <Check className="h-3 w-3" style={{ color: 'var(--pr-ok-t)' }} />
-              <span style={{ color: 'var(--pr-ok-t)' }}>{t.copied}</span>
+              <span className="hidden sm:inline" style={{ color: 'var(--pr-ok-t)' }}>{t.copied}</span>
             </>
           ) : (
             <>
               <Copy className="h-3 w-3 text-[var(--pr-muted)]" />
-              <span>{t.copy}</span>
+              <span className="hidden sm:inline">{t.copy}</span>
             </>
           )}
         </button>

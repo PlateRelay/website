@@ -165,10 +165,10 @@ interface PrinterCardData {
 const SCREEN_DATA = {
   en: {
     screens: [
-      { id: 'participant' as ScreenId, label: 'User Overview', ctx: 'User Portal' },
-      { id: 'console' as ScreenId, label: 'Operator Console', ctx: 'Operator Console' },
-      { id: 'review' as ScreenId, label: 'Review Queue', ctx: 'Review Queue' },
-      { id: 'pickup' as ScreenId, label: 'Pickup Code', ctx: 'Pickup Pass' },
+      { id: 'participant' as ScreenId, label: 'Overview', ctx: 'User Portal' },
+      { id: 'console' as ScreenId, label: 'Console', ctx: 'Operator Console' },
+      { id: 'review' as ScreenId, label: 'Review', ctx: 'Review Queue' },
+      { id: 'pickup' as ScreenId, label: 'Pickup', ctx: 'Pickup Pass' },
     ],
     resetLabel: 'Reset demo',
     overviewTitle: 'Overview',
@@ -1025,10 +1025,10 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
   };
 
   return (
-    <div className="mt-10 w-full">
+    <div className="mt-10 w-full tabular-nums">
       {/* Segmented Switcher */}
       <div className="mb-4 flex flex-wrap items-center justify-center">
-        <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] p-1">
+        <div className="pr-noscrollbar inline-flex max-w-full gap-0.5 overflow-x-auto rounded-full border sm:gap-1 border-[var(--pr-line)] bg-[var(--pr-sub)] p-1">
           {t.screens.map((s) => {
             const active = screen === s.id;
             return (
@@ -1039,7 +1039,7 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
                   setScreen(s.id);
                   setPassTilt({ rx: 0, ry: 0, px: 50, py: 50, active: false });
                 }}
-                className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                className={`cursor-pointer whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3.5 ${
                   active
                     ? 'bg-[var(--pr-ink)] text-[var(--pr-ink-fg)]'
                     : 'bg-transparent text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
