@@ -17,6 +17,15 @@ importers:
       '@astrojs/starlight-tailwind':
         specifier: ^4.0.0
         version: 4.0.0(@astrojs/starlight@0.34.0(astro@5.18.2(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.8)(typescript@5.8.3)))(tailwindcss@4.3.5)
+      '@fontsource/geist-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/geist-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/maple-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@tailwindcss/vite':
         specifier: ^4.1.0
         version: 4.3.5(vite@6.4.6(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0))
@@ -35,6 +44,9 @@ importers:
       sharp:
         specifier: ^0.34.1
         version: 0.34.1
+      starlight-theme-black:
+        specifier: ^0.6.0
+        version: 0.6.0(@astrojs/starlight@0.34.0(astro@5.18.2(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.8)(typescript@5.8.3)))
       tailwindcss:
         specifier: ^4.1.0
         version: 4.3.5
@@ -512,6 +524,15 @@ packages:
 
   '@expressive-code/plugin-text-markers@0.41.7':
     resolution: {integrity: sha512-Ewpwuc5t6eFdZmWlFyeuy3e1PTQC0jFvw2Q+2bpcWXbOZhPLsT7+h8lsSIJxb5mS7wZko7cKyQ2RLYDyK6Fpmw==}
+
+  '@fontsource/geist-mono@5.3.0':
+    resolution: {integrity: sha512-UtJ1BBBCVpMYdIcW7nEB45UAoAw5M53ZXs2t0ciPW+IokuAAIc56M8+kW5tXbRJCTpDw4XTtU7proT6NdQAHTg==}
+
+  '@fontsource/geist-sans@5.3.0':
+    resolution: {integrity: sha512-AmG7cE1AvE4NHROPaOl1sN+a02cB5xy6pA/ZV76HXqWTCsJTV2SCBc9DTFHfJqnVOODm7HhXIYtUIb75NP5QXQ==}
+
+  '@fontsource/maple-mono@5.3.0':
+    resolution: {integrity: sha512-8N3FVDWphO/971tZIig9D558j9jf09fWYIXFjgv7DKJEvDjtgfATx1ScWHdTCsf+tufFS5M1bAa4AumVBKPhSQ==}
 
   '@img/sharp-darwin-arm64@0.34.1':
     resolution: {integrity: sha512-pn44xgBtgpEbZsu+lWf2KNb6OAf70X68k+yk69Ic2Xz11zHR/w24/U49XT7AeRwJ0Px+mhALhU5LPci1Aymk7A==}
@@ -1688,6 +1709,11 @@ packages:
   markdown-table@3.1.0:
     resolution: {integrity: sha512-xpeSCdM+B+6P3ncfgaB7FoDbtJ30xAe6Z18TGT7AgXJsHqCElCICZovQqdRMm7kHgpTyYv36EupqewoFFSB8vw==}
 
+  marked@15.0.6:
+    resolution: {integrity: sha512-Y07CUOE+HQXbVDCGl3LXggqJDbXDP2pArc2C1N1RRMN0ONiShoSsIInMd5Gsxupe7fKLpgimTV+HOJ9r7bA+pg==}
+    engines: {node: '>= 18'}
+    hasBin: true
+
   mdast-util-definitions@6.0.0:
     resolution: {integrity: sha512-scTllyX6pnYNZH/AIp/0ePz6s4cZtARxImwoPJ7kS42n+MnVsI4XbnG6d4ibehRIldYMWM2LD7ImQblVhUejVQ==}
 
@@ -2128,6 +2154,11 @@ packages:
 
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
+
+  starlight-theme-black@0.6.0:
+    resolution: {integrity: sha512-SoYAlyFEyRizcxQXd1ibfAGytmI5gVbSBReK25YFeASI51YwdB9bQtmp14/d70KgfD6kD7SRidhOrPBMD4S3AA==}
+    peerDependencies:
+      '@astrojs/starlight': '>=0.30.0'
 
   string-width@4.1.0:
     resolution: {integrity: sha512-NrX+1dVVh+6Y9dnQ19pR0pP4FiEIlUvdTGn8pw6CKTNq5sgib2nIhmUNT5TAmhWmvKr3WcxBcP3E8nWezuipuQ==}
@@ -2881,6 +2912,12 @@ snapshots:
   '@expressive-code/plugin-text-markers@0.41.7':
     dependencies:
       '@expressive-code/core': 0.41.7
+
+  '@fontsource/geist-mono@5.3.0': {}
+
+  '@fontsource/geist-sans@5.3.0': {}
+
+  '@fontsource/maple-mono@5.3.0': {}
 
   '@img/sharp-darwin-arm64@0.34.1':
     optionalDependencies:
@@ -4133,6 +4170,8 @@ snapshots:
 
   markdown-table@3.1.0: {}
 
+  marked@15.0.6: {}
+
   mdast-util-definitions@6.0.0:
     dependencies:
       '@types/mdast': 4.0.4
@@ -4998,6 +5037,14 @@ snapshots:
   source-map@0.7.6: {}
 
   space-separated-tokens@2.0.2: {}
+
+  starlight-theme-black@0.6.0(@astrojs/starlight@0.34.0(astro@5.18.2(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.8)(typescript@5.8.3))):
+    dependencies:
+      '@astrojs/starlight': 0.34.0(astro@5.18.2(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.68.8)(typescript@5.8.3))
+      '@fontsource/geist-mono': 5.3.0
+      '@fontsource/geist-sans': 5.3.0
+      '@pagefind/default-ui': 1.6.0
+      marked: 15.0.6
 
   string-width@4.1.0:
     dependencies:

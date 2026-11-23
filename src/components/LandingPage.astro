@@ -15,35 +15,35 @@ const t = isZh
       statusTag: '早期开发阶段 · GPL-3.0-only · 欢迎贡献',
       headline: '面向公共共享场景的\n自托管 3D 打印管理平台',
       subtitle:
-        '专为黑客松、创客空间与高校实验室构建。将切片上传校验、人工审核、队列调度、内网设备隔离与凭码取件串联成可审计的工作闭环。',
+        '面向黑客松、创客空间、高校实验室等共享打印机场景，提供多机集中管控以及可审计的审核、调度与凭码交付流程，将用户与物理设备隔离。',
       ctaPrimary: '阅读文档',
       ctaGithub: '查看 GitHub',
       whyEyebrow: '为什么需要 PlateRelay',
       whyTitle: '公共共享打印资源，不能直接套用私有打印农场',
-      whyRows: [
+      whyCards: [
         {
-          num: '01',
-          dim: '资源属性',
-          now: '多方共享的公共打印池',
-          old: '传统打印农场面向单方私有集群，缺少跨团队边界。',
+          icon: 'pool',
+          title: '多方共享的公共打印池',
+          desc: '面向多方共享的公共打印资源，支持多角色协作、公告通知与规则化队列管理，满足各类共享打印空间的治理需求。',
+          contrast: '传统打印农场通常假设单方私有集群，缺少跨团队共享边界。',
         },
         {
-          num: '02',
-          dim: '角色隔离',
-          now: '用户与物理打印机彻底隔离',
-          old: '普通用户只提交 .gcode.3mf 与凭码取件，无法接触打印机后台或局域网。',
+          icon: 'shield',
+          title: '用户与物理打印机彻底隔离',
+          desc: '普通用户只提交 .gcode.3mf 与凭码取件，全程无法接触打印机局域网、访问码或设备底层控制页面。',
+          contrast: '传统方案往往让使用者直接登录打印机控制端。',
         },
         {
-          num: '03',
-          dim: '审核与审计',
-          now: '人工审核门槛 + 分权限审计日志',
-          old: '所有提交先过审核关，调度、操作与驳回原因均可追溯。',
+          icon: 'audit',
+          title: '人工审核门槛 + 分权限审计日志',
+          desc: '提交的文件先经 Worker 解析校验再入审核队列，支持驳回重提与版本差异对比，所有操作按权限可审计。',
+          contrast: '传统排产直接开打，缺少审核把关与状态变更追溯。',
         },
         {
-          num: '04',
-          dim: '交付闭环',
-          now: '入库并确认清床后才释放设备',
-          old: '打印完成不会立即解锁机器，确认清床防撞件后再生成核销取件码。',
+          icon: 'lock',
+          title: '入库并确认清床后才释放设备',
+          desc: '打印完成只代表零件就绪；只有现场人员取件入库并确认热床清空后，打印机才释放给队列里的下一单。',
+          contrast: '传统流程打印结束即释放，极易在公共场地发生撞件或错拿。',
         },
       ],
       archEyebrow: '核心流程与架构',
@@ -52,24 +52,27 @@ const t = isZh
         { n: '01', label: '提交 .gcode.3mf' },
         { n: '02', label: '人工审核' },
         { n: '03', label: '规则队列调度' },
-        { n: '04', label: '内网 Daemon 派单打印' },
-        { n: '05', label: '入库并确认清床释放设备' },
+        { n: '04', label: '内网 Daemon 派单' },
+        { n: '05', label: '入库并确认清床' },
         { n: '06', label: '凭码核销取件' },
       ],
+      loopNote: '清床闭环约束：只有完成第 05 步「入库并确认清床」，设备才会释放回第 03 步的「规则队列调度」承接下一单。',
       archCards: [
         {
           tag: 'apps/server · apps/web · packages/shared',
           title: '中心管理面板（Panel）',
-          desc: '基于 NestJS + React + PostgreSQL，负责账户鉴权、Worker 线程切片解析校验、审核工作台、队列调度、SSE 实时推送与取件核销。',
+          desc: '负责账户鉴权、Worker 线程切片解析校验、审核工作台、队列调度、SSE 实时推送与取件核销，通过 OpenAPI 与客户端保持强类型一致。',
+          chips: ['NestJS', 'React', 'PostgreSQL', 'OpenAPI'],
           href: `${docsBase}/server/`,
-          link: '面板后端文档 →',
+          link: '查看面板后端文档 →',
         },
         {
           tag: 'daemon/src/platerelay_daemon · platerelay_sim',
           title: '局域网守护进程（Daemon）',
-          desc: '基于 Python 3.12 + SQLite 出站队列，部署于打印机所在局域网并主动通过 WebSocket 连接面板，无需开放任何内网入站端口；内置高倍速模拟打印机用于三端联调。',
+          desc: '部署于打印机所在局域网并主动通过 WebSocket 连接面板，无需开放任何内网入站端口；内置高倍速模拟打印机用于三端本地联调。',
+          chips: ['Python 3.12', '主动 WSS', 'SQLite Outbox', 'RSA-OAEP'],
           href: `${docsBase}/daemon/`,
-          link: 'Daemon 与模拟器文档 →',
+          link: '查看 Daemon 与模拟器文档 →',
         },
       ],
       quickEyebrow: '本地开发体验',
@@ -78,6 +81,7 @@ const t = isZh
         '项目暂未发布生产安装包与 Docker Compose，现阶段可通过本地环境预览前端原型，或配合内置模拟打印机完成三端联调。',
       quickLink: '查看完整快速开始与测试命令 →',
       roadmapTitle: '开发路线图',
+      roadmapDoneLabel: '已完成',
       roadmap: [
         {
           done: true,
@@ -105,35 +109,35 @@ const t = isZh
       statusTag: 'Early Development · GPL-3.0-only · Open Source',
       headline: 'Self-hosted 3D printing\nfor shared public fleets',
       subtitle:
-        'Built for hackathons, makerspaces, and university labs. Connect .gcode.3mf validation, manual review, queued dispatch, outbound LAN daemons, and code-verified pickup into one auditable loop.',
+        'For shared-printer environments such as hackathons, makerspaces, and university labs—combining centralized multi-printer control with auditable review, scheduling, hardware isolation, and code-verified pickup.',
       ctaPrimary: 'Read the Docs',
       ctaGithub: 'View on GitHub',
       whyEyebrow: 'Why PlateRelay',
       whyTitle: 'Shared printing spaces need stronger boundaries than private print farms',
-      whyRows: [
+      whyCards: [
         {
-          num: '01',
-          dim: 'Resource Model',
-          now: 'Multi-user shared printing pool',
-          old: 'Traditional print farm tools assume a single-owner private fleet with trusted direct access.',
+          icon: 'pool',
+          title: 'Multi-user shared printing pool',
+          desc: 'Built for shared public printing resources with structured queues, announcements, and multi-role coordination across users and operators.',
+          contrast: 'Traditional print farms assume a single-owner private fleet with trusted direct access.',
         },
         {
-          num: '02',
-          dim: 'Hardware Isolation',
-          now: 'Users never touch physical printers or LANs',
-          old: 'Participants only submit sliced .gcode.3mf files and redeem parts with short pickup codes.',
+          icon: 'shield',
+          title: 'Users isolated from physical hardware',
+          desc: 'Regular users upload .gcode.3mf files and collect finished parts by code—never touching printer LANs, access codes, or device UIs.',
+          contrast: 'Traditional tools expose direct printer controls to users.',
         },
         {
-          num: '03',
-          dim: 'Review & Audit',
-          now: 'Manual review gate + scoped audit trails',
-          old: 'Every order passes review before dispatch, with permission-controlled logs for every state change.',
+          icon: 'audit',
+          title: 'Manual review gate & scoped audit logs',
+          desc: 'Worker threads parse and check every file before review, supporting revision diffs and permission-controlled audit trails.',
+          contrast: 'Traditional dispatch sends jobs directly with minimal review or traceability.',
         },
         {
-          num: '04',
-          dim: 'Fulfillment Loop',
-          now: 'Printers release only after bed clearance',
-          old: 'Finishing a print does not unlock the machine until staff shelve the part and confirm an empty bed.',
+          icon: 'lock',
+          title: 'Bed-clearance gate before printer release',
+          desc: 'Finishing a print does not unlock the printer. Staff shelve the part and confirm an empty bed before the next job dispatches.',
+          contrast: 'Traditional tools release printers on finish, risking build-plate collisions.',
         },
       ],
       archEyebrow: 'Workflow & Architecture',
@@ -142,22 +146,25 @@ const t = isZh
         { n: '01', label: 'Submit .gcode.3mf' },
         { n: '02', label: 'Manual Review' },
         { n: '03', label: 'Queue Scheduling' },
-        { n: '04', label: 'Daemon Dispatch & Print' },
-        { n: '05', label: 'Shelve & Confirm Bed Clear' },
-        { n: '06', label: 'Code-Verified Pickup' },
+        { n: '04', label: 'Daemon Dispatch' },
+        { n: '05', label: 'Shelve & Bed Clear' },
+        { n: '06', label: 'Code Pickup' },
       ],
+      loopNote: 'Bed-clearance release loop: step 05 must confirm physical bed clearance before releasing the printer back to step 03 Queue Scheduling.',
       archCards: [
         {
           tag: 'apps/server · apps/web · packages/shared',
           title: 'Central Management Panel',
-          desc: 'Powered by NestJS, React, and PostgreSQL. Handles authentication, worker-thread .gcode.3mf parsing, review queues, job dispatch, SSE live streams, and pickup verification.',
+          desc: 'Handles authentication, worker-thread .gcode.3mf parsing, review queues, job dispatch, SSE live streams, and pickup verification from shared OpenAPI contracts.',
+          chips: ['NestJS', 'React', 'PostgreSQL', 'OpenAPI'],
           href: `${docsBase}/server/`,
           link: 'Panel Server docs →',
         },
         {
           tag: 'daemon/src/platerelay_daemon · platerelay_sim',
           title: 'Outbound LAN Daemon',
-          desc: 'Written in Python 3.12 with SQLite outbox durability. Runs inside the printer LAN and connects outbound over WebSocket—zero inbound ports needed. Ships with a built-in simulated printer.',
+          desc: 'Runs inside the printer LAN and connects outbound over WebSocket—zero inbound firewall ports needed. Ships with a built-in simulated printer for local testing.',
+          chips: ['Python 3.12', 'Outbound WSS', 'SQLite Outbox', 'RSA-OAEP'],
           href: `${docsBase}/daemon/`,
           link: 'Daemon & Simulator docs →',
         },
@@ -168,6 +175,7 @@ const t = isZh
         'Production packages and Docker Compose are not published yet. Local development defaults to embedded PGlite and local storage, with a high-speed simulated printer included.',
       quickLink: 'Read Getting Started & test commands →',
       roadmapTitle: 'Roadmap',
+      roadmapDoneLabel: 'Done',
       roadmap: [
         {
           done: true,
@@ -193,71 +201,101 @@ const t = isZh
     };
 ---
 
-<!-- Section 1: Editorial Hero + Authentic PlateRelay UI Preview -->
-<section class="border-b border-[var(--pr-line)]">
-  <div class="mx-auto max-w-[1160px] border-x border-[var(--pr-line)] px-4 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-16">
+<!-- Section 1: Editorial Hero + Faithful PlateRelay UI Preview -->
+<section class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
+  <div class="mx-auto max-w-[1120px] px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
     <div class="mx-auto max-w-3xl text-center">
-      <div class="inline-flex items-center gap-2 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-3 py-1 text-xs font-medium text-[var(--pr-fg2)]">
-        <span class="h-1.5 w-1.5 rounded-full" style="background: var(--pr-ok-d)"></span>
+      <div class="pr-fade-up inline-flex items-center gap-2 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-3 py-1 text-xs font-medium text-[var(--pr-fg2)]">
+        <span class="pr-breathe h-1.5 w-1.5 rounded-full" style="background: var(--pr-ok-d)"></span>
         <span>{t.statusTag}</span>
       </div>
 
-      <h1 class="mt-5 whitespace-pre-line text-3xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-5xl sm:leading-[1.12]">
+      <h1 class="pr-fade-up pr-delay-1 mt-5 whitespace-pre-line text-3xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-5xl sm:leading-[1.12]">
         {t.headline}
       </h1>
 
-      <p class="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--pr-muted)] sm:text-base">
+      <p class="pr-fade-up pr-delay-2 mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--pr-muted)] sm:text-base">
         {t.subtitle}
       </p>
 
-      <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+      <div class="pr-fade-up pr-delay-3 mt-7 flex flex-wrap items-center justify-center gap-3">
         <a
           href={`${docsBase}/overview/`}
-          class="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--pr-ink)] px-5 text-sm font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90 no-underline"
+          class="group inline-flex h-10 items-center gap-2 rounded-full bg-[var(--pr-ink)] px-5 text-sm font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90"
         >
           <span>{t.ctaPrimary}</span>
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
         </a>
         <a
           href="https://github.com/PlateRelay/PlateRelay"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex h-10 items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-5 text-sm font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)] no-underline"
+          class="inline-flex h-10 items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-5 text-sm font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)]"
         >
           {t.ctaGithub}
         </a>
       </div>
     </div>
 
-    <ProductPreview client:load lang={lang} />
+    <div class="pr-demo-settle">
+      <ProductPreview client:load lang={lang} />
+    </div>
   </div>
 </section>
 
-<!-- Section 2: Why PlateRelay (1px Precision Grid) -->
-<section class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
-  <div class="mx-auto max-w-[1160px] border-x border-[var(--pr-line)]">
-    <div class="border-b border-[var(--pr-line)] px-4 py-10 sm:px-8">
-      <div class="font-mono text-xs font-medium uppercase tracking-wider text-[var(--pr-muted)]">
+<!-- Section 2: Why PlateRelay (2x2 Airy Card Grid) -->
+<section class="border-b border-[var(--pr-line)] bg-[var(--pr-band)]">
+  <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
+    <div class="max-w-2xl">
+      <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--pr-busy-t)">
         {t.whyEyebrow}
       </div>
-      <h2 class="mt-2 max-w-2xl text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">
+      <h2 class="mt-2 text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">
         {t.whyTitle}
       </h2>
     </div>
 
-    <div class="grid divide-y divide-[var(--pr-line)] sm:grid-cols-2 sm:divide-x lg:grid-cols-4 lg:divide-y-0">
-      {t.whyRows.map((row) => (
-        <div class="flex flex-col justify-between gap-4 p-6">
+    <div class="mt-8 grid gap-5 md:grid-cols-2">
+      {t.whyCards.map((card) => (
+        <div class="flex flex-col justify-between rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
           <div>
-            <div class="flex items-center justify-between text-xs text-[var(--pr-muted)]">
-              <span class="font-semibold">{row.dim}</span>
-              <span class="font-mono text-[var(--pr-faint)]">{row.num}</span>
+            <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--pr-line)] bg-[var(--pr-sub)] text-[var(--pr-fg)]">
+              {card.icon === 'pool' && (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              )}
+              {card.icon === 'shield' && (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              )}
+              {card.icon === 'audit' && (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <path d="m9 14 2 2 4-4" />
+                </svg>
+              )}
+              {card.icon === 'lock' && (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
             </div>
-            <h3 class="mt-3 text-[15px] font-semibold leading-snug text-[var(--pr-fg)]">
-              {row.now}
-            </h3>
+
+            <h3 class="mt-4 text-base font-semibold text-[var(--pr-fg)]">{card.title}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
           </div>
-          <p class="text-xs leading-relaxed text-[var(--pr-muted)]">{row.old}</p>
+
+          <div class="mt-5 border-t border-[var(--pr-line)] pt-3.5 text-xs text-[var(--pr-faint)]">
+            {card.contrast}
+          </div>
         </div>
       ))}
     </div>
@@ -265,10 +303,10 @@ const t = isZh
 </section>
 
 <!-- Section 3: 6-Stage Workflow & Split Architecture -->
-<section id="architecture" class="border-b border-[var(--pr-line)] bg-[var(--pr-page)]">
-  <div class="mx-auto max-w-[1160px] border-x border-[var(--pr-line)] px-4 py-14 sm:px-8 sm:py-16">
+<section id="architecture" class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
+  <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
     <div class="max-w-2xl">
-      <div class="font-mono text-xs font-medium uppercase tracking-wider text-[var(--pr-muted)]">
+      <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--pr-busy-t)">
         {t.archEyebrow}
       </div>
       <h2 class="mt-2 text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">
@@ -276,15 +314,16 @@ const t = isZh
       </h2>
     </div>
 
-    <!-- 6-Stage Numbered Pipeline -->
-    <ol class="mt-8 grid grid-cols-2 overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] sm:grid-cols-3 lg:grid-cols-6">
-      {t.steps.map((step, idx) => (
-        <li
-          class={`flex flex-col justify-between gap-2 p-4 ${
-            idx < t.steps.length - 1 ? 'border-b border-r border-[var(--pr-line)] lg:border-b-0' : ''
-          }`}
-        >
-          <span class="font-mono text-[11px] font-semibold text-[var(--pr-faint)]">{step.n}</span>
+    <!-- 6 Standalone Rounded Step Cards -->
+    <ol class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      {t.steps.map((step) => (
+        <li class="flex flex-col justify-between gap-2.5 rounded-xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
+          <span
+            class="font-mono text-xs font-semibold"
+            style={step.n === '05' ? 'color: var(--pr-busy-t)' : 'color: var(--pr-faint)'}
+          >
+            {step.n}
+          </span>
           <span class="text-[13px] font-semibold leading-snug text-[var(--pr-fg)]">
             {step.label}
           </span>
@@ -292,22 +331,43 @@ const t = isZh
       ))}
     </ol>
 
+    <!-- Bed-Clearance Release Loop Callout -->
+    <div
+      class="mt-3 flex items-center gap-2.5 rounded-xl border border-[var(--pr-line)] px-4 py-3 text-xs font-medium"
+      style="background: var(--pr-busy-s); color: var(--pr-busy-t)"
+    >
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+      <span>{t.loopNote}</span>
+    </div>
+
     <!-- Panel vs Outbound LAN Daemon -->
-    <div class="mt-4 grid gap-4 md:grid-cols-2">
+    <div class="mt-6 grid gap-5 md:grid-cols-2">
       {t.archCards.map((card) => (
-        <div class="flex flex-col justify-between rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6">
+        <div class="flex flex-col justify-between rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
           <div>
             <div class="font-mono text-[11px] text-[var(--pr-muted)]">{card.tag}</div>
             <h3 class="mt-2 text-lg font-bold tracking-tight text-[var(--pr-fg)]">
               {card.title}
             </h3>
-            <p class="mt-2 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
+            <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
+            <div class="mt-4 flex flex-wrap gap-1.5">
+              {card.chips.map((chip) => (
+                <span class="rounded-md border border-[var(--pr-line)] bg-[var(--pr-sub)] px-2 py-0.5 font-mono text-[11px] text-[var(--pr-fg2)]">
+                  {chip}
+                </span>
+              ))}
+            </div>
           </div>
           <a
             href={card.href}
-            class="mt-5 inline-flex items-center text-sm font-semibold text-[var(--pr-fg)] hover:underline no-underline"
+            class="group mt-5 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+            style="color: var(--pr-busy-t)"
           >
-            {card.link}
+            <span>{card.link.replace(/\s*→$/, '')}</span>
+            <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
           </a>
         </div>
       ))}
@@ -316,10 +376,10 @@ const t = isZh
 </section>
 
 <!-- Section 4: Local Quick Start & Roadmap -->
-<section id="roadmap" class="bg-[var(--pr-bg)]">
-  <div class="mx-auto grid max-w-[1160px] gap-10 border-x border-[var(--pr-line)] px-4 py-14 sm:px-8 sm:py-16 lg:grid-cols-12">
+<section id="roadmap" class="bg-[var(--pr-band)]">
+  <div data-reveal class="pr-reveal mx-auto grid max-w-[1120px] gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-12">
     <div class="lg:col-span-6">
-      <div class="font-mono text-xs font-medium uppercase tracking-wider text-[var(--pr-muted)]">
+      <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--pr-busy-t)">
         {t.quickEyebrow}
       </div>
       <h2 class="mt-2 text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
@@ -333,31 +393,49 @@ const t = isZh
 
       <a
         href={`${docsBase}/getting-started/`}
-        class="mt-4 inline-flex items-center text-sm font-semibold text-[var(--pr-fg)] hover:underline no-underline"
+        class="group mt-4 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+        style="color: var(--pr-busy-t)"
       >
-        {t.quickLink}
+        <span>{t.quickLink.replace(/\s*→$/, '')}</span>
+        <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
       </a>
     </div>
 
     <div class="lg:col-span-6">
-      <div class="font-mono text-xs font-medium uppercase tracking-wider text-[var(--pr-muted)]">
+      <div class="text-xs font-semibold uppercase tracking-wider text-[var(--pr-muted)]">
         {t.roadmapTitle}
       </div>
       <div class="mt-5 divide-y divide-[var(--pr-line)] rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
         {t.roadmap.map((item) => (
-          <div class="flex items-start gap-3 p-4">
-            <span
-              class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold"
-              style={
-                item.done
-                  ? 'background: var(--pr-ok-s); color: var(--pr-ok-t);'
-                  : 'background: var(--pr-sub); color: var(--pr-muted);'
-              }
-            >
-              {item.done ? '✓' : '○'}
-            </span>
-            <div>
-              <h3 class="text-sm font-semibold text-[var(--pr-fg)]">{item.title}</h3>
+          <div class="flex items-start gap-3.5 p-5">
+            {item.done ? (
+              <span
+                class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full"
+                style="background: var(--pr-ok-s); color: var(--pr-ok-t);"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+            ) : (
+              <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pr-sub)] text-[var(--pr-faint)]">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="7" />
+                </svg>
+              </span>
+            )}
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-sm font-semibold text-[var(--pr-fg)]">{item.title}</h3>
+                {item.done && (
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style="background: var(--pr-ok-s); color: var(--pr-ok-t);"
+                  >
+                    {t.roadmapDoneLabel}
+                  </span>
+                )}
+              </div>
               <p class="mt-1 text-xs leading-relaxed text-[var(--pr-muted)]">{item.desc}</p>
             </div>
           </div>

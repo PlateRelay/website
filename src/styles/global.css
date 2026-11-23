@@ -1,24 +1,27 @@
-@layer base, starlight, theme, components, utilities;
+@layer base, starlight, black, theme, components, utilities;
 
+@import '@fontsource/maple-mono/400.css';
+@import '@fontsource/maple-mono/500.css';
+@import '@fontsource/maple-mono/600.css';
 @import '@astrojs/starlight-tailwind';
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 @theme {
-  --font-sans: 'Inter', 'Noto Sans SC', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Maple Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', monospace;
 
-  --color-accent-50: #fafafa;
-  --color-accent-100: #f5f5f5;
-  --color-accent-200: #e5e5e5;
-  --color-accent-300: #d4d4d4;
-  --color-accent-400: #a3a3a3;
-  --color-accent-500: #737373;
-  --color-accent-600: #525252;
-  --color-accent-700: #404040;
-  --color-accent-800: #262626;
-  --color-accent-900: #171717;
-  --color-accent-950: #0a0a0a;
+  --color-accent-50: #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
+  --color-accent-950: #172554;
 
   --color-gray-50: #fafafa;
   --color-gray-100: #f5f5f5;
@@ -51,6 +54,25 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .pr-landing a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .pr-landing button {
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .pr-landing svg {
+    display: block;
+  }
+
   .pr-landing ul,
   .pr-landing ol {
     margin: 0;
@@ -70,13 +92,21 @@
   }
 }
 
+@layer utilities {
+  :root:root {
+    --sl-font: var(--font-sans);
+    --sl-font-mono: var(--font-mono);
+  }
+}
+
 /* ==========================================================================
-   PlateRelay Tokens — Light-first Precision Engineering Palette
+   PlateRelay Tokens — Landing Page Palette
    Matches PlateRelay UI-project/DesktopMain.dc.html & ConsoleOverview.dc.html
    ========================================================================== */
 :root,
 :root[data-theme='light'] {
   --pr-bg: #ffffff;
+  --pr-band: #fafafa;
   --pr-page: #f5f5f5;
   --pr-card: #ffffff;
   --pr-sub: #f5f5f5;
@@ -112,26 +142,12 @@
 
   --pr-heat: #f97316;
   --pr-cool: #06b6d4;
-
-  /* Starlight Light Monochrome Precision Overrides */
-  --sl-font: var(--font-sans);
-  --sl-font-mono: var(--font-mono);
-  --sl-color-bg: #ffffff;
-  --sl-color-bg-nav: rgba(255, 255, 255, 0.9);
-  --sl-color-bg-sidebar: #fafafa;
-  --sl-color-bg-inline-code: #f5f5f5;
-  --sl-color-hairline-light: #e5e5e5;
-  --sl-color-hairline: #e5e5e5;
-  --sl-color-hairline-shade: #e5e5e5;
-  --sl-color-text: #262626;
-  --sl-color-text-accent: #171717;
-  --sl-color-accent-low: #f5f5f5;
-  --sl-color-accent: #171717;
-  --sl-color-accent-high: #171717;
+  --pr-pass-sheen: rgba(255, 255, 255, 0.34);
 }
 
 :root[data-theme='dark'] {
   --pr-bg: #0a0a0a;
+  --pr-band: #111111;
   --pr-page: #0a0a0a;
   --pr-card: #171717;
   --pr-sub: #262626;
@@ -167,22 +183,129 @@
 
   --pr-heat: #fb923c;
   --pr-cool: #22d3ee;
+  --pr-pass-sheen: rgba(255, 255, 255, 0.09);
+}
 
-  /* Starlight Dark Monochrome Precision Overrides */
-  --sl-font: var(--font-sans);
-  --sl-font-mono: var(--font-mono);
-  --sl-color-bg: #0a0a0a;
-  --sl-color-bg-nav: rgba(10, 10, 10, 0.88);
-  --sl-color-bg-sidebar: #111111;
-  --sl-color-bg-inline-code: #262626;
-  --sl-color-hairline-light: #262626;
-  --sl-color-hairline: #262626;
-  --sl-color-hairline-shade: #1c1c1c;
-  --sl-color-text: #e5e5e5;
-  --sl-color-text-accent: #fafafa;
-  --sl-color-accent-low: #262626;
-  --sl-color-accent: #fafafa;
-  --sl-color-accent-high: #fafafa;
+.pr-demo-bezel {
+  background: rgba(0, 0, 0, 0.025);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 28px -8px rgba(0, 0, 0, 0.08),
+    0 36px 72px -24px rgba(0, 0, 0, 0.14);
+}
+
+:root[data-theme='dark'] .pr-demo-bezel {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 18px 40px -10px rgba(0, 0, 0, 0.65),
+    0 44px 90px -24px rgba(0, 0, 0, 0.85);
+}
+
+.pr-demo-card {
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease,
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 200ms ease;
+}
+
+.pr-demo-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--pr-line2);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    0 10px 24px -8px rgba(0, 0, 0, 0.09);
+}
+
+:root[data-theme='dark'] .pr-demo-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 14px 30px -10px rgba(0, 0, 0, 0.55);
+}
+
+.pr-demo-dropzone {
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pr-demo-dropzone:hover {
+  transform: translateY(-2px);
+  border-color: var(--pr-fg);
+  background-color: var(--pr-card);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.03),
+    0 8px 20px -8px rgba(0, 0, 0, 0.07);
+}
+
+:root[data-theme='dark'] .pr-demo-dropzone:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 12px 26px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   Animations & Native Cross-Document View Transitions
+   ========================================================================== */
+@view-transition {
+  navigation: auto;
+}
+
+.layout__header {
+  view-transition-name: sl-header;
+}
+
+.aside {
+  view-transition-name: sl-sidebar;
+}
+
+.container-main > .main {
+  view-transition-name: sl-main;
+}
+
+@keyframes pr-vt-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pr-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+::view-transition-old(sl-header),
+::view-transition-new(sl-header),
+::view-transition-old(sl-sidebar),
+::view-transition-new(sl-sidebar) {
+  animation: none;
+}
+
+::view-transition-old(sl-main) {
+  animation: pr-vt-out 140ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(sl-main) {
+  animation: pr-vt-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes pr-breathe {
@@ -195,63 +318,104 @@
   animation: pr-breathe 1.6s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pr-breathe {
-    animation: none;
+@keyframes pr-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* ==========================================================================
-   Starlight Monochrome Precision Polish
-   ========================================================================== */
-.header {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.pr-fade-up {
+  animation: pr-fade-up 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.site-title {
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.pr-delay-1 {
+  animation-delay: 60ms;
 }
 
-.sidebar-content a {
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  padding: 0.375rem 0.625rem;
-  transition: background-color 140ms ease, color 140ms ease;
+.pr-delay-2 {
+  animation-delay: 120ms;
 }
 
-.sidebar-content a[aria-current='page'] {
-  background-color: var(--pr-sub);
-  color: var(--pr-fg);
-  font-weight: 600;
+.pr-delay-3 {
+  animation-delay: 180ms;
 }
 
-.sl-markdown-content h1,
-.sl-markdown-content h2,
-.sl-markdown-content h3 {
-  letter-spacing: -0.02em;
+.pr-delay-4 {
+  animation-delay: 240ms;
 }
 
-.sl-markdown-content :not(pre) > code {
-  border-radius: 0.375rem;
-  border: 1px solid var(--pr-line);
-  padding: 0.125rem 0.375rem;
-  font-size: 0.85em;
+@keyframes pr-demo-settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.expressive-code .frame {
-  border-radius: 0.75rem !important;
-  border: 1px solid var(--pr-line) !important;
-  box-shadow: none !important;
+.pr-demo-settle {
+  animation: pr-demo-settle 620ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
 }
 
-.pagination-links a {
-  border-radius: 0.75rem;
-  border-color: var(--pr-line);
-  transition: border-color 140ms ease, background-color 140ms ease;
+@keyframes pr-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.pagination-links a:hover {
-  border-color: var(--pr-line2);
+.pr-panel-in {
+  animation: pr-panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.pr-js .pr-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 540ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 540ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.pr-js .pr-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-breathe,
+  .pr-fade-up,
+  .pr-demo-settle,
+  .pr-panel-in {
+    animation: none !important;
+  }
+
+  .pr-demo-card,
+  .pr-demo-card:hover,
+  .pr-demo-dropzone,
+  .pr-demo-dropzone:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  html.pr-js .pr-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

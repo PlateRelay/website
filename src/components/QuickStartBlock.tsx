@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Terminal } from 'lucide-react';
 
 type Lang = 'en' | 'zh-cn';
 type TabId = 'panel' | 'daemon';
@@ -74,8 +74,9 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--pr-line)] bg-[var(--pr-sub)] px-3.5 py-2.5">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--pr-line)] bg-[var(--pr-sub)] px-4 py-2.5">
+        <div className="flex items-center gap-1.5">
+          <Terminal className="mr-1 h-3.5 w-3.5 text-[var(--pr-muted)]" />
           {t.tabs.map((item) => (
             <button
               key={item.id}
@@ -86,8 +87,8 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
               }}
               className={`cursor-pointer rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 tab === item.id
-                  ? 'bg-[var(--pr-card)] text-[var(--pr-fg)] shadow-2xs'
-                  : 'text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
+                  ? 'border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]'
+                  : 'bg-transparent text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
               }`}
             >
               {item.label}
@@ -98,12 +99,12 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[var(--pr-line)] bg-[var(--pr-card)] px-2.5 py-1 text-[11px] font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)]"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--pr-line)] bg-[var(--pr-card)] px-2.5 py-1 text-[11px] font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
         >
           {copied ? (
             <>
               <Check className="h-3 w-3" style={{ color: 'var(--pr-ok-t)' }} />
-              <span>{t.copied}</span>
+              <span style={{ color: 'var(--pr-ok-t)' }}>{t.copied}</span>
             </>
           ) : (
             <>
@@ -114,7 +115,7 @@ export default function QuickStartBlock({ lang }: { lang: Lang }) {
         </button>
       </div>
 
-      <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-[var(--pr-fg)]">
+      <pre key={tab} className="pr-panel-in overflow-x-auto p-5 font-mono text-xs leading-relaxed text-[var(--pr-fg)]">
         <code>{t.code[tab]}</code>
       </pre>
     </div>

@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
+import starlightThemeBlack from 'starlight-theme-black';
 
 export default defineConfig({
   integrations: [
@@ -12,6 +13,31 @@ export default defineConfig({
         src: './src/assets/logo.svg',
         alt: 'PlateRelay',
       },
+      plugins: [
+        starlightThemeBlack({
+          navLinks: [
+            {
+              label: 'Home',
+              link: '/',
+            },
+            {
+              label: 'Docs',
+              link: '/docs/overview/',
+            },
+            {
+              label: 'Architecture',
+              link: '/docs/architecture/',
+            },
+            {
+              label: 'GitHub',
+              link: 'https://github.com/PlateRelay/PlateRelay',
+              attrs: { target: '_blank', rel: 'noopener noreferrer' },
+            },
+          ],
+          footerText:
+            'PlateRelay — Open-source self-hosted 3D printing platform · [GitHub](https://github.com/PlateRelay/PlateRelay) · GPL-3.0-only',
+        }),
+      ],
       head: [
         {
           tag: 'link',
@@ -29,7 +55,7 @@ export default defineConfig({
           tag: 'link',
           attrs: {
             rel: 'stylesheet',
-            href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap',
+            href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap',
           },
         },
       ],

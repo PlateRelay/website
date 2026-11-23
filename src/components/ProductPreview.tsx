@@ -1,37 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type MouseEvent } from 'react';
 import {
   AlertTriangle,
   Bell,
-  Boxes,
   Check,
-  CheckSquare,
+  CheckCircle2,
   ChevronRight,
-  ClipboardCheck,
   Clock,
   Copy,
-  Database,
   Download,
-  FileText,
-  History,
-  LayoutGrid,
   ListChecks,
+  Loader2,
   Megaphone,
-  Package,
   QrCode,
-  ScanLine,
-  Server,
-  Settings,
+  RotateCcw,
   Upload,
-  User,
-  Users,
   X,
 } from 'lucide-react';
 
 type Lang = 'en' | 'zh-cn';
 type ScreenId = 'participant' | 'console' | 'review' | 'pickup';
-type ReviewKey = 'new' | 'rev';
+type ReviewKey = 'new' | 'rev' | 'sample';
+type SubmitPhase = 'idle' | 'parsing' | 'done';
 
-function PrinterMark({ size = 18 }: { size?: number }) {
+interface ReviewDiff {
+  title: string;
+  durLabel: string;
+  durFrom: string;
+  durTo: string;
+  massLabel: string;
+  massVal: string;
+}
+
+interface ReviewItem {
+  key: ReviewKey;
+  file: string;
+  meta: string;
+  ago: string;
+  c1: string;
+  c2: string;
+  c3: string;
+  kind: string;
+  who: string;
+  avc: string;
+  av: string;
+  user: string;
+  at: string;
+  no: string;
+  dur: string;
+  grams: string;
+  fil: string;
+  reason: string;
+  warning?: string;
+  diff?: ReviewDiff;
+}
+
+function PrinterMark({ size = 16 }: { size?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -125,7 +148,6 @@ interface PrinterCardData {
   model: string;
   label: string;
   tone: 'busy' | 'wait' | 'ok';
-  breathe?: boolean;
   shot: string;
   temps: { kind: 'nozzle' | 'bed' | 'chamber'; val: string; target: string; color: string }[];
   ams: { slots: string[]; err?: boolean }[];
@@ -143,11 +165,12 @@ interface PrinterCardData {
 const SCREEN_DATA = {
   en: {
     screens: [
-      { id: 'participant' as ScreenId, label: 'Participant Overview' },
-      { id: 'console' as ScreenId, label: 'Operator Console' },
-      { id: 'review' as ScreenId, label: 'Review Queue' },
-      { id: 'pickup' as ScreenId, label: 'Pickup Code' },
+      { id: 'participant' as ScreenId, label: 'User Overview', ctx: 'User Portal' },
+      { id: 'console' as ScreenId, label: 'Operator Console', ctx: 'Operator Console' },
+      { id: 'review' as ScreenId, label: 'Review Queue', ctx: 'Review Queue' },
+      { id: 'pickup' as ScreenId, label: 'Pickup Code', ctx: 'Pickup Pass' },
     ],
+    resetLabel: 'Reset demo',
     overviewTitle: 'Overview',
     announcement:
       'Pickup desk has moved to Service Counter B. New submissions close at 22:00; queued orders keep printing overnight. Collect remaining parts from 09:00 tomorrow with your pickup code.',
@@ -155,43 +178,43 @@ const SCREEN_DATA = {
     myOrder: {
       title: 'My Orders',
       status: 'Ready for Pickup',
+      collectedStatus: 'Collected',
       no: '#0039',
       name: 'Enclosure Snap Clip',
       detail: 'Stored at A-2-3',
+      collectedDetail: 'Verified at Counter B',
       more: '1 printing · 1 queued',
+      hint: 'View pickup pass',
     },
     site: {
       title: 'Site',
-      idle: '2 idle',
-      queued: '14 queued',
+      idleUnit: 'idle',
+      queuedUnit: 'queued',
       wait: 'Est. wait 1–2h',
     },
     submitCard: {
       title: 'Submit File',
-      sub: 'Drop .gcode.3mf or browse',
+      sub: 'Click for sample .gcode.3mf or drop file',
+      defaultFile: 'servo_bracket.gcode.3mf',
+      parsingTitle: 'Parsing .gcode.3mf…',
+      parsingSub: 'Worker checking metadata & G-code',
+      doneTitle: 'Submitted to queue',
+      doneMeta: 'PLA Blue · 0.4 mm · 42m · 18 g',
+      goReview: 'Inspect in Review →',
+      submittedToast: (file: string) => `Worker validated ${file} — queued for review`,
     },
     printersHeading: 'Printers',
     printersCount: '11',
-    viewAll: 'View all 11 printers',
-    participantNav: {
-      items: ['Overview', 'Submit', 'My Orders', 'Profile'],
-      user: 'Yifan Chen',
-      role: 'chenyifan',
-    },
-    consoleNav: {
-      badge: 'Console',
-      top: ['Overview', 'To-do'],
-      siteLabel: 'Site',
-      site: ['Review', 'Orders', 'Printers', 'Pickup'],
-      opsLabel: 'Operations',
-      ops: ['Filament', 'Forms', 'Notices', 'Users'],
-      sysLabel: 'System',
-      sys: ['daemon', 'Audit Log', 'Settings'],
-      user: 'Eng. Wang',
-      role: 'Admin',
+    consoleActions: {
+      reloadBtn: 'Reload',
+      clearBedBtn: 'Confirm Clear',
+      reloadedToast: 'H2D-01 filament reloaded — print resumed',
+      bedClearedToast: 'X2D-02 bed confirmed clear — printer released to pool',
+      resumedLabel: 'Printing',
+      resumedHeroSmall: 'remaining',
     },
     consoleTop: {
-      todoTitle: 'To-do · 5',
+      todoPrefix: 'To-do · ',
       todoMore: '2 more items',
       todos: [
         { id: 'H2D-01', text: 'AMS A2 filament runout', time: '8m', tone: 'alert' as const },
@@ -199,8 +222,9 @@ const SCREEN_DATA = {
         { id: '#0027', text: 'Pickup waiting > 24h', time: '1d', tone: 'idle' as const },
       ],
       reviewTitle: 'Pending Review',
-      reviewCount: '3 orders',
+      ordersUnit: 'orders',
       reviewSub: 'Oldest waiting 18m',
+      reviewSubEmpty: 'Queue caught up',
       reviewFoot: '1 revision included',
     },
     printers: [
@@ -211,9 +235,9 @@ const SCREEN_DATA = {
         tone: 'busy',
         shot: '14:32:05',
         temps: [
-          { kind: 'nozzle', val: '220', target: '/220°', color: 'var(--pr-heat)' },
-          { kind: 'bed', val: '60', target: '/60°', color: 'var(--pr-heat)' },
-          { kind: 'chamber', val: '38', target: '/40°', color: 'var(--pr-heat)' },
+          { kind: 'nozzle', val: '220', target: ' / 220°C', color: 'var(--pr-heat)' },
+          { kind: 'bed', val: '60', target: ' / 60°C', color: 'var(--pr-heat)' },
+          { kind: 'chamber', val: '38', target: ' / 40°C', color: 'var(--pr-heat)' },
         ],
         ams: [
           { slots: ['#F2F2F2', '#1F6FEB', '#E5484D', '#2B2B2B'] },
@@ -235,9 +259,9 @@ const SCREEN_DATA = {
         tone: 'wait',
         shot: '14:32:01',
         temps: [
-          { kind: 'nozzle', val: '200', target: '/220°', color: 'var(--pr-heat)' },
-          { kind: 'bed', val: '55', target: '/55°', color: 'var(--pr-heat)' },
-          { kind: 'chamber', val: '36', target: '/—', color: 'var(--pr-muted)' },
+          { kind: 'nozzle', val: '200', target: ' / 220°C', color: 'var(--pr-heat)' },
+          { kind: 'bed', val: '55', target: ' / 55°C', color: 'var(--pr-heat)' },
+          { kind: 'chamber', val: '36', target: ' / —', color: 'var(--pr-muted)' },
         ],
         ams: [{ slots: ['#2B2B2B', '#3DD68C', '#FFFFFF', '#FFD60A'], err: true }],
         owner: 'Le Zhao',
@@ -257,9 +281,9 @@ const SCREEN_DATA = {
         tone: 'ok',
         shot: '14:31:57',
         temps: [
-          { kind: 'nozzle', val: '27', target: '/—', color: 'var(--pr-muted)' },
-          { kind: 'bed', val: '26', target: '/—', color: 'var(--pr-muted)' },
-          { kind: 'chamber', val: '25', target: '/—', color: 'var(--pr-muted)' },
+          { kind: 'nozzle', val: '27', target: ' / —', color: 'var(--pr-muted)' },
+          { kind: 'bed', val: '26', target: ' / —', color: 'var(--pr-muted)' },
+          { kind: 'chamber', val: '25', target: ' / —', color: 'var(--pr-muted)' },
         ],
         ams: [{ slots: ['#F2F2F2', '#2B2B2B', '#E5484D', ''] }],
         hero: 'Available',
@@ -269,7 +293,7 @@ const SCREEN_DATA = {
     ] satisfies PrinterCardData[],
     review: {
       title: 'Review',
-      sub: '3 pending review',
+      pendingSuffix: 'pending review',
       download: 'Download',
       fileSection: 'File',
       plateLabel: 'Plate 1',
@@ -285,9 +309,15 @@ const SCREEN_DATA = {
       colorVal: 'Similar match OK',
       reject: 'Reject',
       approve: 'Approve',
+      emptyTitle: 'Review queue is clear',
+      emptySub: 'All pending submissions in this sandbox have been processed.',
+      submitSampleBtn: 'Try sample submission',
+      approvedToast: (no: string) => `Approved ${no} — dispatched to print queue`,
+      rejectedToast: (no: string) => `Rejected ${no} — returned for revision`,
+      downloadToast: 'Demo sandbox: .gcode.3mf download simulated',
       list: [
         {
-          key: 'new' as ReviewKey,
+          key: 'new',
           file: 'gimbal_base.gcode.3mf',
           meta: 'Yifan Chen · New',
           ago: '18m ago',
@@ -308,7 +338,7 @@ const SCREEN_DATA = {
           warning: 'Metadata vs G-code mismatch: filament 36 g / 41 g',
         },
         {
-          key: 'rev' as ReviewKey,
+          key: 'rev',
           file: 'gearbox_shell_v2.gcode.3mf',
           meta: 'Le Zhao · Revision v2',
           ago: '9m ago',
@@ -335,22 +365,48 @@ const SCREEN_DATA = {
             massVal: '29 g → 36 g',
           },
         },
-      ],
+      ] as ReviewItem[],
     },
+    sampleReview: {
+      key: 'sample',
+      file: 'servo_bracket.gcode.3mf',
+      meta: 'You (Demo) · Validated',
+      ago: 'Just now',
+      c1: '#10B981',
+      c2: '#059669',
+      c3: '#047857',
+      kind: 'New · Validated',
+      who: 'You (Demo)',
+      avc: 'D',
+      av: '#2563eb',
+      user: 'demo-user',
+      at: 'Just now',
+      no: '#0045',
+      dur: '42m',
+      grams: '18 g',
+      fil: 'PLA Blue · Left Nozzle',
+      reason: 'Interactive homepage sandbox sample print',
+    } satisfies ReviewItem,
     pickup: {
       title: 'Enclosure Snap Clip',
       shelf: 'Stored at A-2-3',
       expires: 'Expires in 9m 42s',
-      copiedText: 'Copied',
+      copiedText: 'Copied to clipboard',
+      simulateBtn: 'Simulate Desk Pickup',
+      undoBtn: 'Restore Ready State',
+      verifiedBadge: 'Collected',
+      verifiedMeta: 'Verified and handed over at Counter B',
+      verifiedToast: 'Order #0039 verified and marked collected',
     },
   },
   'zh-cn': {
     screens: [
-      { id: 'participant' as ScreenId, label: '选手端概况' },
-      { id: 'console' as ScreenId, label: '控制台概况' },
-      { id: 'review' as ScreenId, label: '人工审核' },
-      { id: 'pickup' as ScreenId, label: '凭码取件' },
+      { id: 'participant' as ScreenId, label: '用户端概况', ctx: '用户端工作区' },
+      { id: 'console' as ScreenId, label: '控制台概况', ctx: '管理控制台' },
+      { id: 'review' as ScreenId, label: '人工审核', ctx: '审核队列' },
+      { id: 'pickup' as ScreenId, label: '凭码取件', ctx: '取件核销凭证' },
     ],
+    resetLabel: '重置演示',
     overviewTitle: '概况',
     announcement:
       '取件处已移至 B 区服务台。22:00 起停止接收新订单，已排队的订单照常打印。未取走的零件明早 9:00 起在 B 区服务台领取，请携带取件码。',
@@ -358,43 +414,43 @@ const SCREEN_DATA = {
     myOrder: {
       title: '我的订单',
       status: '可取件',
+      collectedStatus: '已取件',
       no: '#0039',
       name: '外壳卡扣',
       detail: '存放于 A-2-3',
+      collectedDetail: '已在 B 区服务台核销',
       more: '另有 1 打印中 · 1 排队中',
+      hint: '点击查看取件码',
     },
     site: {
       title: '现场',
-      idle: '2 台空闲',
-      queued: '14 单排队',
+      idleUnit: '台空闲',
+      queuedUnit: '单排队',
       wait: '预计等待 1–2 小时',
     },
     submitCard: {
       title: '提交文件',
-      sub: '拖入 .gcode.3mf 或点击选择',
+      sub: '点击试传示例 .gcode.3mf 或拖入文件',
+      defaultFile: '舵机支架.gcode.3mf',
+      parsingTitle: '正在解析 .gcode.3mf…',
+      parsingSub: 'Worker 校验切片结构、喷嘴与耗材元数据',
+      doneTitle: '已提交至审核队列',
+      doneMeta: 'PLA 蓝 · 0.4 mm · 42m · 18 g',
+      goReview: '前往审核队列 →',
+      submittedToast: (file: string) => `Worker 已完成 ${file} 解析校验并入审核队列`,
     },
     printersHeading: '打印机',
     printersCount: '11',
-    viewAll: '查看全部 11 台打印机',
-    participantNav: {
-      items: ['概况', '提交', '我的订单', '我的'],
-      user: '陈一帆',
-      role: 'chenyifan',
-    },
-    consoleNav: {
-      badge: '控制台',
-      top: ['概况', '待办'],
-      siteLabel: '现场',
-      site: ['审核', '订单', '打印机', '取件'],
-      opsLabel: '运营',
-      ops: ['耗材目录', '申请表单', '公告', '用户'],
-      sysLabel: '系统',
-      sys: ['daemon', '审计日志', '系统设置'],
-      user: '王工',
-      role: '管理员',
+    consoleActions: {
+      reloadBtn: '补料恢复',
+      clearBedBtn: '确认清床',
+      reloadedToast: 'H2D-01 已补料，恢复打印',
+      bedClearedToast: 'X2D-02 已确认清床，设备已释放回空闲池',
+      resumedLabel: '打印中',
+      resumedHeroSmall: '剩余',
     },
     consoleTop: {
-      todoTitle: '待办 · 5',
+      todoPrefix: '待办 · ',
       todoMore: '另有 2 项',
       todos: [
         { id: 'H2D-01', text: 'AMS A2 断料', time: '8 分钟', tone: 'alert' as const },
@@ -402,8 +458,9 @@ const SCREEN_DATA = {
         { id: '#0027', text: '待取件超过 24 小时', time: '1 天', tone: 'idle' as const },
       ],
       reviewTitle: '待审核',
-      reviewCount: '3 单',
+      ordersUnit: '单',
       reviewSub: '最早一单已等 18 分钟',
+      reviewSubEmpty: '当前审核队列已清空',
       reviewFoot: '其中 1 单为修改',
     },
     printers: [
@@ -414,9 +471,9 @@ const SCREEN_DATA = {
         tone: 'busy',
         shot: '14:32:05',
         temps: [
-          { kind: 'nozzle', val: '220', target: '/220°', color: 'var(--pr-heat)' },
-          { kind: 'bed', val: '60', target: '/60°', color: 'var(--pr-heat)' },
-          { kind: 'chamber', val: '38', target: '/40°', color: 'var(--pr-heat)' },
+          { kind: 'nozzle', val: '220', target: ' / 220°C', color: 'var(--pr-heat)' },
+          { kind: 'bed', val: '60', target: ' / 60°C', color: 'var(--pr-heat)' },
+          { kind: 'chamber', val: '38', target: ' / 40°C', color: 'var(--pr-heat)' },
         ],
         ams: [
           { slots: ['#F2F2F2', '#1F6FEB', '#E5484D', '#2B2B2B'] },
@@ -438,9 +495,9 @@ const SCREEN_DATA = {
         tone: 'wait',
         shot: '14:32:01',
         temps: [
-          { kind: 'nozzle', val: '200', target: '/220°', color: 'var(--pr-heat)' },
-          { kind: 'bed', val: '55', target: '/55°', color: 'var(--pr-heat)' },
-          { kind: 'chamber', val: '36', target: '/—', color: 'var(--pr-muted)' },
+          { kind: 'nozzle', val: '200', target: ' / 220°C', color: 'var(--pr-heat)' },
+          { kind: 'bed', val: '55', target: ' / 55°C', color: 'var(--pr-heat)' },
+          { kind: 'chamber', val: '36', target: ' / —', color: 'var(--pr-muted)' },
         ],
         ams: [{ slots: ['#2B2B2B', '#3DD68C', '#FFFFFF', '#FFD60A'], err: true }],
         owner: '赵乐',
@@ -460,9 +517,9 @@ const SCREEN_DATA = {
         tone: 'ok',
         shot: '14:31:57',
         temps: [
-          { kind: 'nozzle', val: '27', target: '/—', color: 'var(--pr-muted)' },
-          { kind: 'bed', val: '26', target: '/—', color: 'var(--pr-muted)' },
-          { kind: 'chamber', val: '25', target: '/—', color: 'var(--pr-muted)' },
+          { kind: 'nozzle', val: '27', target: ' / —', color: 'var(--pr-muted)' },
+          { kind: 'bed', val: '26', target: ' / —', color: 'var(--pr-muted)' },
+          { kind: 'chamber', val: '25', target: ' / —', color: 'var(--pr-muted)' },
         ],
         ams: [{ slots: ['#F2F2F2', '#2B2B2B', '#E5484D', ''] }],
         hero: '可用',
@@ -472,7 +529,7 @@ const SCREEN_DATA = {
     ] satisfies PrinterCardData[],
     review: {
       title: '审核',
-      sub: '3 单待审核',
+      pendingSuffix: '单待审核',
       download: '下载文件',
       fileSection: '文件',
       plateLabel: '第 1 盘',
@@ -488,9 +545,15 @@ const SCREEN_DATA = {
       colorVal: '相近即可',
       reject: '驳回',
       approve: '通过',
+      emptyTitle: '待审核队列已清空',
+      emptySub: '当前所有待审核订单均已处理完成。',
+      submitSampleBtn: '试传示例文件',
+      approvedToast: (no: string) => `已通过 ${no}，已加入调度队列`,
+      rejectedToast: (no: string) => `已驳回 ${no}，已退回等待修改`,
+      downloadToast: '演示沙盒：已模拟触发 .gcode.3mf 下载',
       list: [
         {
-          key: 'new' as ReviewKey,
+          key: 'new',
           file: '云台底座.gcode.3mf',
           meta: '陈一帆 · 新提交',
           ago: '18 分钟前',
@@ -511,7 +574,7 @@ const SCREEN_DATA = {
           warning: '元数据与 G-code 不一致：耗材用量 36 g / 41 g',
         },
         {
-          key: 'rev' as ReviewKey,
+          key: 'rev',
           file: '齿轮箱外壳_v2.gcode.3mf',
           meta: '赵乐 · 修改 · 第 2 版',
           ago: '9 分钟前',
@@ -538,20 +601,53 @@ const SCREEN_DATA = {
             massVal: '29 g → 36 g',
           },
         },
-      ],
+      ] as ReviewItem[],
     },
+    sampleReview: {
+      key: 'sample',
+      file: '舵机支架.gcode.3mf',
+      meta: '当前访客 · 校验通过',
+      ago: '刚刚',
+      c1: '#10B981',
+      c2: '#059669',
+      c3: '#047857',
+      kind: '新提交 · 校验通过',
+      who: '当前访客（演示）',
+      avc: '访',
+      av: '#2563eb',
+      user: 'demo-user',
+      at: '刚刚',
+      no: '#0045',
+      dur: '42m',
+      grams: '18 g',
+      fil: 'PLA 蓝 · 左喷嘴',
+      reason: '首页交互沙盒示例提交',
+    } satisfies ReviewItem,
     pickup: {
       title: '外壳卡扣',
       shelf: '存放于 A-2-3',
       expires: '9 分 42 秒后失效',
-      copiedText: '已复制',
+      copiedText: '已复制取件码',
+      simulateBtn: '模拟现场核销取件',
+      undoBtn: '恢复待取件状态',
+      verifiedBadge: '已核销取件',
+      verifiedMeta: '已在 B 区服务台完成核销',
+      verifiedToast: '订单 #0039 已核销交付',
     },
   },
 };
 
-function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
+function PrinterGrid({
+  printers,
+  onResolveAlert,
+  resolveLabel,
+}: {
+  printers: PrinterCardData[];
+  onResolveAlert?: (printerId: string) => void;
+  resolveLabel?: string;
+}) {
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3">
       {printers.map((p) => {
         const tone = {
           busy: { t: 'var(--pr-busy-t)', s: 'var(--pr-busy-s)', d: 'var(--pr-busy-d)' },
@@ -569,23 +665,21 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
         return (
           <article
             key={p.id}
-            className="flex flex-col overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] text-left"
+            className="pr-demo-card flex flex-col overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] text-left"
           >
-            <div className="flex flex-1 flex-col gap-3 p-3.5">
+            <div className="flex flex-1 flex-col gap-3.5 p-4">
               {/* Top row: id + model + status chip */}
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[13px] font-semibold text-[var(--pr-fg)]">
-                  {p.id}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[11px] text-[var(--pr-muted)]">
+                <span className="font-mono text-sm font-semibold text-[var(--pr-fg)]">{p.id}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-[var(--pr-muted)]">
                   {p.model}
                 </span>
                 <span
-                  className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 text-[11px] font-semibold"
+                  className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold"
                   style={{ background: tone.s, color: tone.t }}
                 >
                   <i
-                    className="h-2 w-2 rounded-full"
+                    className={`h-2 w-2 rounded-full ${p.tone === 'busy' ? 'pr-breathe' : ''}`}
                     style={{ background: tone.d }}
                   />
                   {p.label}
@@ -593,9 +687,9 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
               </div>
 
               {/* Middle row: camera + temps + AMS capsules */}
-              <div className="grid grid-cols-[minmax(0,1fr)_82px_68px] items-center gap-2.5">
+              <div className="grid grid-cols-[minmax(0,1fr)_86px_54px] items-center gap-3">
                 <div
-                  className="relative aspect-[4/3] w-full overflow-hidden rounded-[10px]"
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-xl"
                   style={{ background: 'linear-gradient(180deg, #404040, #0a0a0a)' }}
                 >
                   <div
@@ -606,14 +700,14 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
                     className="absolute bottom-[24%] right-[18%] h-[16%] w-[28%] -skew-x-12 rounded-[3px]"
                     style={{ background: 'linear-gradient(180deg, #f5f5f5, #a3a3a3)' }}
                   />
-                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 font-mono text-[10px] leading-[16px] text-[#fafafa]">
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 px-1.5 font-mono text-[10px] leading-[18px] text-[#fafafa]">
                     {p.shot}
                   </span>
                 </div>
 
                 {/* Temps */}
                 <dl
-                  className="grid grid-cols-[auto_1fr] items-center gap-x-1 gap-y-1.5 text-[11px] leading-[14px]"
+                  className="grid grid-cols-[auto_1fr] items-center gap-x-1.5 gap-y-2 text-[11px] leading-[14px]"
                   style={{ opacity: p.tone === 'ok' ? 0.5 : 1 }}
                 >
                   {p.temps.map((m) => (
@@ -632,22 +726,22 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
                 </dl>
 
                 {/* AMS Capsules */}
-                <div className="flex flex-col justify-center gap-1">
+                <div className="flex flex-col justify-center gap-1.5">
                   {p.ams.map((unit, uIdx) => (
                     <div
                       key={`${p.id}-ams-${uIdx}`}
-                      className="relative flex h-[22px] w-[46px] items-start justify-center gap-[2.5px] overflow-hidden rounded-[5px] bg-[var(--pr-sub)] pt-[4px]"
+                      className="relative flex h-[24px] w-[48px] items-start justify-center gap-[3px] overflow-hidden rounded-[6px] bg-[var(--pr-sub)] pt-[4px]"
                       style={{
                         border: unit.err
                           ? '1.5px solid var(--pr-alert-d)'
                           : '1px solid var(--pr-line2)',
                       }}
                     >
-                      <i className="absolute inset-x-0 bottom-0 h-[5px] bg-[var(--pr-line)]" />
+                      <i className="absolute inset-x-0 bottom-0 h-[6px] bg-[var(--pr-line)]" />
                       {unit.slots.map((hex, sIdx) => (
                         <i
                           key={`${p.id}-s-${uIdx}-${sIdx}`}
-                          className="relative block h-[12px] w-[5px] rounded-[2.5px]"
+                          className="relative block h-[13px] w-[5.5px] rounded-[2.5px]"
                           style={{
                             background: hex || 'transparent',
                             border: hex
@@ -666,7 +760,7 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
                 {p.owner && (
                   <div className="flex items-center gap-1.5 text-xs">
                     <span
-                      className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-semibold text-white"
+                      className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"
                       style={{ background: p.avBg }}
                     >
                       {p.avatar}
@@ -677,13 +771,10 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
                 )}
 
                 <div className="flex items-baseline gap-1.5">
-                  <span
-                    className="text-lg font-bold tracking-tight"
-                    style={{ color: heroColor }}
-                  >
+                  <span className="text-xl font-bold tracking-tight" style={{ color: heroColor }}>
                     {p.hero}
                   </span>
-                  <span className="flex-1 truncate text-[11px] text-[var(--pr-muted)]">
+                  <span className="flex-1 truncate text-xs text-[var(--pr-muted)]">
                     {p.heroSmall}
                   </span>
                   {p.pct !== undefined && (
@@ -694,24 +785,43 @@ function PrinterGrid({ printers }: { printers: PrinterCardData[] }) {
                 {p.pct !== undefined && (
                   <div className="h-1.5 overflow-hidden rounded-full bg-[var(--pr-track)]">
                     <div
-                      className="h-full rounded-full"
+                      className="h-full rounded-full transition-[width] duration-500 ease-out"
                       style={{ width: `${p.pct}%`, background: tone.d }}
                     />
                   </div>
                 )}
 
-                <span className="text-[11px] text-[var(--pr-muted)]">{p.context}</span>
+                <span className="text-xs text-[var(--pr-muted)]">{p.context}</span>
               </div>
             </div>
 
             {p.alert && (
-              <div
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold"
-                style={{ background: 'var(--pr-alert-s)', color: 'var(--pr-alert-t)' }}
-              >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{p.alert}</span>
-              </div>
+              onResolveAlert ? (
+                <button
+                  type="button"
+                  onClick={() => onResolveAlert(p.id)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2.5 text-left text-xs font-semibold transition-opacity hover:opacity-85"
+                  style={{ background: 'var(--pr-alert-s)', color: 'var(--pr-alert-t)' }}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{p.alert}</span>
+                  </span>
+                  {resolveLabel && (
+                    <span className="shrink-0 rounded-full bg-[var(--pr-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--pr-fg)]">
+                      {resolveLabel}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <div
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold"
+                  style={{ background: 'var(--pr-alert-s)', color: 'var(--pr-alert-t)' }}
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{p.alert}</span>
+                </div>
+              )
             )}
           </article>
         );
@@ -724,9 +834,187 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
   const [screen, setScreen] = useState<ScreenId>('participant');
   const [reviewKey, setReviewKey] = useState<ReviewKey>('new');
   const [copied, setCopied] = useState(false);
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>('idle');
+  const [submittedFileName, setSubmittedFileName] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [h2dReloaded, setH2dReloaded] = useState(false);
+  const [x2dCleared, setX2dCleared] = useState(false);
+  const [reviewDecisions, setReviewDecisions] = useState<Record<string, 'approved' | 'rejected'>>({});
+  const [pickupVerified, setPickupVerified] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [passTilt, setPassTilt] = useState({ rx: 0, ry: 0, px: 50, py: 50, active: false });
+
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const parseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (parseTimerRef.current) clearTimeout(parseTimerRef.current);
+    };
+  }, []);
 
   const t = SCREEN_DATA[lang];
-  const activeReview = t.review.list.find((r) => r.key === reviewKey) ?? t.review.list[0];
+  const activeScreen = t.screens.find((s) => s.id === screen) ?? t.screens[0];
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2600);
+  };
+
+  const allReviewItems: ReviewItem[] =
+    submitPhase === 'done'
+      ? [
+          {
+            ...t.sampleReview,
+            file: submittedFileName || t.submitCard.defaultFile,
+          },
+          ...t.review.list,
+        ]
+      : t.review.list;
+
+  const pendingReviewItems = allReviewItems.filter((item) => !reviewDecisions[item.key]);
+  const activeReview =
+    pendingReviewItems.find((r) => r.key === reviewKey) ?? pendingReviewItems[0] ?? null;
+
+  const approvedCount = Object.values(reviewDecisions).filter((v) => v === 'approved').length;
+  const liveIdleCount = 2 + (x2dCleared ? 1 : 0);
+  const liveQueuedCount = 14 + approvedCount;
+
+  const livePrinters: PrinterCardData[] = t.printers.map((p) => {
+    if (p.id === 'H2D-01' && h2dReloaded) {
+      return {
+        ...p,
+        label: t.consoleActions.resumedLabel,
+        tone: 'busy',
+        heroSmall: t.consoleActions.resumedHeroSmall,
+        temps: p.temps.map((m) => (m.kind === 'nozzle' ? { ...m, val: '220' } : m)),
+        ams: p.ams.map((u) => ({ ...u, err: false })),
+        alert: undefined,
+      };
+    }
+    return p;
+  });
+
+  const liveTodos = t.consoleTop.todos.filter((td) => {
+    if (td.id === 'H2D-01' && h2dReloaded) return false;
+    if (td.id === 'X2D-02' && x2dCleared) return false;
+    return true;
+  });
+  const liveTodoCount = liveTodos.length + 2;
+
+  const isDirty =
+    announcementDismissed ||
+    submitPhase !== 'idle' ||
+    h2dReloaded ||
+    x2dCleared ||
+    Object.keys(reviewDecisions).length > 0 ||
+    pickupVerified;
+
+  const handleReset = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (parseTimerRef.current) clearTimeout(parseTimerRef.current);
+    setAnnouncementDismissed(false);
+    setSubmitPhase('idle');
+    setSubmittedFileName(null);
+    setIsDragOver(false);
+    setH2dReloaded(false);
+    setX2dCleared(false);
+    setReviewDecisions({});
+    setPickupVerified(false);
+    setReviewKey('new');
+    setCopied(false);
+    setToast(null);
+    setPassTilt({ rx: 0, ry: 0, px: 50, py: 50, active: false });
+  };
+
+  const handleStartSubmit = (customFileName?: string, switchToSampleReview = false) => {
+    if (submitPhase === 'parsing') return;
+    const nextFile = customFileName?.trim() || t.submitCard.defaultFile;
+    setSubmittedFileName(nextFile);
+    setSubmitPhase('parsing');
+    if (parseTimerRef.current) clearTimeout(parseTimerRef.current);
+    parseTimerRef.current = setTimeout(() => {
+      setSubmitPhase('done');
+      setReviewDecisions((prev) => {
+        if (!prev.sample) return prev;
+        const copy = { ...prev };
+        delete copy.sample;
+        return copy;
+      });
+      if (switchToSampleReview) {
+        setReviewKey('sample');
+      }
+      showToast(t.submitCard.submittedToast(nextFile));
+    }, 800);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    handleStartSubmit(file?.name);
+  };
+
+  const handleReloadH2D = () => {
+    if (h2dReloaded) return;
+    setH2dReloaded(true);
+    showToast(t.consoleActions.reloadedToast);
+  };
+
+  const handleClearX2D = () => {
+    if (x2dCleared) return;
+    setX2dCleared(true);
+    showToast(t.consoleActions.bedClearedToast);
+  };
+
+  const handleReviewDecision = (decision: 'approved' | 'rejected') => {
+    if (!activeReview) return;
+    const targetNo = activeReview.no;
+    const remaining = pendingReviewItems.filter((item) => item.key !== activeReview.key);
+    setReviewDecisions((prev) => ({ ...prev, [activeReview.key]: decision }));
+    if (remaining.length > 0) {
+      setReviewKey(remaining[0].key);
+    }
+    showToast(
+      decision === 'approved'
+        ? t.review.approvedToast(targetNo)
+        : t.review.rejectedToast(targetNo)
+    );
+  };
+
+  const handleTogglePickup = () => {
+    const next = !pickupVerified;
+    setPickupVerified(next);
+    if (next) {
+      showToast(t.pickup.verifiedToast);
+    }
+  };
+
+  const handlePassMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+    setPassTilt({
+      rx: (0.5 - y) * 10,
+      ry: (x - 0.5) * 10,
+      px: x * 100,
+      py: y * 100,
+      active: true,
+    });
+  };
+
+  const handlePassLeave = () => {
+    setPassTilt({ rx: 0, ry: 0, px: 50, py: 50, active: false });
+  };
 
   const handleCopyCode = async () => {
     try {
@@ -738,8 +1026,8 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
 
   return (
     <div className="mt-10 w-full">
-      {/* Segmented Switcher above the real UI viewport */}
-      <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5">
+      {/* Segmented Switcher */}
+      <div className="mb-4 flex flex-wrap items-center justify-center">
         <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] p-1">
           {t.screens.map((s) => {
             const active = screen === s.id;
@@ -747,11 +1035,14 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setScreen(s.id)}
+                onClick={() => {
+                  setScreen(s.id);
+                  setPassTilt({ rx: 0, ry: 0, px: 50, py: 50, active: false });
+                }}
                 className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                   active
                     ? 'bg-[var(--pr-ink)] text-[var(--pr-ink-fg)]'
-                    : 'text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
+                    : 'bg-transparent text-[var(--pr-muted)] hover:text-[var(--pr-fg)]'
                 }`}
               >
                 {s.label}
@@ -761,593 +1052,686 @@ export default function ProductPreview({ lang }: { lang: Lang }) {
         </div>
       </div>
 
-      {/* Faithful PlateRelay Desktop Application Frame */}
-      <div className="overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-page)] text-left shadow-[0_12px_40px_-16px_rgba(0,0,0,0.12)]">
-        {/* Minimal Window Bar */}
-        <div className="flex items-center justify-between border-b border-[var(--pr-line)] bg-[var(--pr-card)] px-4 py-2.5">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--pr-line2)]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--pr-line2)]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--pr-line2)]" />
-          </div>
-          <span className="font-mono text-[11px] text-[var(--pr-muted)]">
-            PlateRelay · {t.screens.find((s) => s.id === screen)?.label}
-          </span>
-          <span className="text-[11px] text-[var(--pr-faint)]">1440px UI</span>
-        </div>
+      {/* Precision Outer Bezel + Faithful Workspace Frame (flat 0 deg for readability) */}
+      <div className="pr-demo-bezel rounded-[22px] p-2">
+        <div className="overflow-hidden rounded-[14px] border border-[var(--pr-line)] bg-[var(--pr-page)] text-left">
+          {/* Window Chrome */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--pr-line)] bg-[var(--pr-card)] px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="grid h-5 w-5 place-items-center rounded-md bg-[var(--pr-ink)] text-[var(--pr-ink-fg)]">
+                <PrinterMark size={12} />
+              </span>
+              <span className="text-xs font-semibold text-[var(--pr-fg)]">PlateRelay</span>
+            </div>
 
-        {/* Screen 1: Participant Overview (DesktopMain) */}
-        {screen === 'participant' && (
-          <div className="grid lg:grid-cols-[200px_1fr]">
-            {/* Left Sidebar */}
-            <aside className="hidden flex-col justify-between border-r border-[var(--pr-line)] bg-[var(--pr-card)] p-3 lg:flex">
-              <div className="flex flex-col gap-1">
-                <div className="mb-3 flex items-center gap-2.5 px-2 py-1">
-                  <span className="grid h-8 w-8 place-items-center rounded-[9px] bg-[var(--pr-ink)] text-[var(--pr-ink-fg)]">
-                    <PrinterMark size={16} />
-                  </span>
-                  <span className="text-sm font-bold tracking-tight text-[var(--pr-fg)]">
-                    PlateRelay
-                  </span>
-                </div>
-                {[
-                  { label: t.participantNav.items[0], icon: LayoutGrid, active: true },
-                  { label: t.participantNav.items[1], icon: Upload, active: false },
-                  { label: t.participantNav.items[2], icon: Package, active: false },
-                  { label: t.participantNav.items[3], icon: User, active: false },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.label}
-                      className={`flex h-9 items-center gap-2.5 rounded-[10px] px-3 text-[13px] ${
-                        item.active
-                          ? 'bg-[var(--pr-sub)] font-semibold text-[var(--pr-fg)]'
-                          : 'font-medium text-[var(--pr-fg2)]'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            {toast ? (
+              <span
+                key={toast}
+                className="pr-panel-in inline-flex items-center gap-1.5 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--pr-fg)]"
+              >
+                <i className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--pr-ok-d)' }} />
+                <span>{toast}</span>
+              </span>
+            ) : (
+              <span className="text-xs font-medium text-[var(--pr-muted)]">
+                {activeScreen.label}
+              </span>
+            )}
 
-              <div className="flex items-center gap-2.5 rounded-xl p-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f43f5e] text-xs font-semibold text-white">
-                  {t.participantNav.user.slice(0, 1)}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-[13px] font-semibold text-[var(--pr-fg)]">
-                    {t.participantNav.user}
-                  </div>
-                  <div className="truncate text-[11px] text-[var(--pr-muted)]">
-                    {t.participantNav.role}
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Content Area */}
-            <div className="flex flex-col gap-4 p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold tracking-tight text-[var(--pr-fg)]">
-                  {t.overviewTitle}
-                </h3>
-                <span className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]">
-                  <Bell className="h-4 w-4" />
-                  <i
-                    className="absolute right-2 top-2 h-2 w-2 rounded-full"
-                    style={{ background: 'var(--pr-alert-d)' }}
-                  />
-                </span>
-              </div>
-
-              {/* Announcement Card */}
-              <div className="flex items-start gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--pr-fg)]" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium leading-relaxed text-[var(--pr-fg)]">
-                    {t.announcement}
-                  </p>
-                  <span className="mt-0.5 block text-[11px] text-[var(--pr-faint)]">
-                    {t.announcementMeta}
-                  </span>
-                </div>
-                <X className="h-4 w-4 shrink-0 text-[var(--pr-muted)]" />
-              </div>
-
-              {/* Top 3 Summary Cards */}
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="flex flex-col justify-between gap-2 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                  <div className="flex items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
-                    <span>{t.myOrder.title}</span>
-                    <ChevronRight className="h-4 w-4 text-[var(--pr-faint)]" />
-                  </div>
-                  <div>
-                    <span
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold"
-                      style={{ color: 'var(--pr-ok-t)' }}
-                    >
-                      <i
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: 'var(--pr-ok-d)' }}
-                      />
-                      {t.myOrder.status}
-                    </span>
-                    <div className="mt-0.5 text-lg font-bold tracking-tight text-[var(--pr-fg)]">
-                      {t.myOrder.no}
-                    </div>
-                    <div className="text-xs text-[var(--pr-fg2)]">{t.myOrder.name}</div>
-                    <div className="text-xs text-[var(--pr-muted)]">{t.myOrder.detail}</div>
-                  </div>
-                  <div className="text-[11px] text-[var(--pr-faint)]">{t.myOrder.more}</div>
-                </div>
-
-                <div className="flex flex-col gap-2.5 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                  <div className="text-sm font-semibold text-[var(--pr-fg)]">{t.site.title}</div>
-                  <div className="flex flex-col gap-2 text-[13px] font-medium text-[var(--pr-fg2)]">
-                    <span className="flex items-center gap-2">
-                      <PrinterMark size={15} />
-                      {t.site.idle}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <ListChecks className="h-4 w-4 text-[var(--pr-muted)]" />
-                      {t.site.queued}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-[var(--pr-muted)]" />
-                      {t.site.wait}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--pr-faint)] p-4 text-center">
-                  <Upload className="h-5 w-5 text-[var(--pr-muted)]" />
-                  <span className="text-sm font-semibold text-[var(--pr-fg)]">
-                    {t.submitCard.title}
-                  </span>
-                  <span className="text-xs text-[var(--pr-muted)]">{t.submitCard.sub}</span>
-                </div>
-              </div>
-
-              {/* Printer Fleet Section */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-baseline justify-between px-1">
-                  <span className="text-sm font-semibold text-[var(--pr-muted)]">
-                    {t.printersHeading}
-                  </span>
-                  <span className="text-xs text-[var(--pr-faint)]">{t.printersCount}</span>
-                </div>
-                <PrinterGrid printers={t.printers} />
-              </div>
+            <div className="flex items-center gap-2">
+              {isDirty && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>{t.resetLabel}</span>
+                </button>
+              )}
+              <span className="rounded-full bg-[var(--pr-sub)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--pr-muted)]">
+                {activeScreen.ctx}
+              </span>
             </div>
           </div>
-        )}
 
-        {/* Screen 2: Operator Console Overview (ConsoleOverview) */}
-        {screen === 'console' && (
-          <div className="grid lg:grid-cols-[210px_1fr]">
-            <aside className="hidden flex-col justify-between border-r border-[var(--pr-line)] bg-[var(--pr-card)] p-3 lg:flex">
-              <div className="flex flex-col gap-0.5">
-                <div className="mb-3 flex items-center gap-2 px-1.5 py-1">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-[var(--pr-ink)] text-[var(--pr-ink-fg)]">
-                    <PrinterMark size={16} />
-                  </span>
-                  <span className="text-sm font-bold tracking-tight text-[var(--pr-fg)]">
-                    PlateRelay
-                  </span>
-                  <span className="ml-auto rounded-full bg-[var(--pr-sub)] px-2 py-0.5 text-[11px] font-semibold text-[var(--pr-muted)]">
-                    {t.consoleNav.badge}
-                  </span>
-                </div>
-
-                <div className="flex h-8 items-center gap-2.5 rounded-[10px] bg-[var(--pr-sub)] px-2.5 text-[13px] font-semibold text-[var(--pr-fg)]">
-                  <LayoutGrid className="h-4 w-4" />
-                  <span>{t.consoleNav.top[0]}</span>
-                </div>
-                <div className="flex h-8 items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] font-medium text-[var(--pr-fg2)]">
-                  <CheckSquare className="h-4 w-4" />
-                  <span>{t.consoleNav.top[1]}</span>
-                  <span
-                    className="ml-auto rounded-full px-1.5 text-[11px] font-semibold text-white"
-                    style={{ background: 'var(--pr-alert-d)' }}
-                  >
-                    5
+          {/* Fixed-height Stage to eliminate vertical jumping on tab switch */}
+          <div key={screen} className="min-h-[540px] pr-panel-in">
+            {/* Screen 1: Participant Overview (DesktopMain) */}
+            {screen === 'participant' && (
+              <div className="flex flex-col gap-5 p-5 sm:p-7">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
+                    {t.overviewTitle}
+                  </h3>
+                  <span className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]">
+                    <Bell className="h-4 w-4" />
+                    <i
+                      className="absolute right-2 top-2 h-2 w-2 rounded-full"
+                      style={{ background: 'var(--pr-alert-d)' }}
+                    />
                   </span>
                 </div>
 
-                <div className="px-2.5 pb-1 pt-2.5 text-[11px] font-semibold text-[var(--pr-faint)]">
-                  {t.consoleNav.siteLabel}
-                </div>
-                {[
-                  { label: t.consoleNav.site[0], icon: ClipboardCheck, count: '3' },
-                  { label: t.consoleNav.site[1], icon: Package },
-                  { label: t.consoleNav.site[2], icon: Boxes },
-                  { label: t.consoleNav.site[3], icon: ScanLine },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.label}
-                      className="flex h-8 items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] font-medium text-[var(--pr-fg2)]"
+                {/* Announcement Card */}
+                {!announcementDismissed && (
+                  <div className="pr-demo-card flex items-start gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4">
+                    <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--pr-fg)]" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium leading-relaxed text-[var(--pr-fg)]">
+                        {t.announcement}
+                      </p>
+                      <span className="mt-0.5 block text-[11px] text-[var(--pr-faint)]">
+                        {t.announcementMeta}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAnnouncementDismissed(true)}
+                      aria-label="Dismiss announcement"
+                      className="grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--pr-muted)] transition-colors hover:bg-[var(--pr-sub)] hover:text-[var(--pr-fg)]"
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
-                      {item.count && (
-                        <span
-                          className="ml-auto rounded-full px-1.5 text-[11px] font-semibold text-white"
-                          style={{ background: 'var(--pr-alert-d)' }}
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Top 3 Summary Cards */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => setScreen('pickup')}
+                    className="pr-demo-card group flex w-full cursor-pointer flex-col justify-between gap-2 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 text-left"
+                  >
+                    <div className="flex w-full items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
+                      <span>{t.myOrder.title}</span>
+                      <ChevronRight className="h-4 w-4 text-[var(--pr-faint)] transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </div>
+                    <div>
+                      <span
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold"
+                        style={{ color: pickupVerified ? 'var(--pr-muted)' : 'var(--pr-ok-t)' }}
+                      >
+                        <i
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: pickupVerified ? 'var(--pr-idle-d)' : 'var(--pr-ok-d)' }}
+                        />
+                        {pickupVerified ? t.myOrder.collectedStatus : t.myOrder.status}
+                      </span>
+                      <div className="mt-0.5 text-xl font-bold tracking-tight text-[var(--pr-fg)]">
+                        {t.myOrder.no}
+                      </div>
+                      <div className="text-xs text-[var(--pr-fg2)]">{t.myOrder.name}</div>
+                      <div className="text-xs text-[var(--pr-muted)]">
+                        {pickupVerified ? t.myOrder.collectedDetail : t.myOrder.detail}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-[var(--pr-faint)]">
+                      <span>{t.myOrder.more}</span>
+                      <span className="font-medium text-[var(--pr-muted)]">{t.myOrder.hint}</span>
+                    </div>
+                  </button>
+
+                  <div className="pr-demo-card flex flex-col gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4">
+                    <div className="text-sm font-semibold text-[var(--pr-fg)]">{t.site.title}</div>
+                    <div className="flex flex-col gap-2.5 text-[13px] font-medium text-[var(--pr-fg2)]">
+                      <span className="flex items-center gap-2">
+                        <PrinterMark size={15} />
+                        {liveIdleCount} {t.site.idleUnit}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <ListChecks className="h-4 w-4 text-[var(--pr-muted)]" />
+                        {liveQueuedCount} {t.site.queuedUnit}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-[var(--pr-muted)]" />
+                        {t.site.wait}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Interactive Dropzone: Click for sample .gcode.3mf or drop file */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={handleDrop}
+                    className={`pr-demo-dropzone group flex min-h-[146px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-4 text-center ${
+                      isDragOver
+                        ? 'border-[var(--pr-fg)] bg-[var(--pr-card)]'
+                        : 'border-[var(--pr-faint)]'
+                    }`}
+                  >
+                    {submitPhase === 'idle' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStartSubmit()}
+                        className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 text-center"
+                      >
+                        <Upload className="h-5 w-5 text-[var(--pr-muted)] transition-transform duration-200 group-hover:-translate-y-0.5" />
+                        <span className="text-sm font-semibold text-[var(--pr-fg)]">
+                          {t.submitCard.title}
+                        </span>
+                        <span className="text-xs text-[var(--pr-muted)]">{t.submitCard.sub}</span>
+                      </button>
+                    )}
+
+                    {submitPhase === 'parsing' && (
+                      <div className="pr-panel-in flex w-full flex-col items-center justify-center gap-2">
+                        <Loader2
+                          className="h-5 w-5 animate-spin"
+                          style={{ color: 'var(--pr-busy-t)' }}
+                        />
+                        <span className="text-sm font-semibold text-[var(--pr-fg)]">
+                          {t.submitCard.parsingTitle}
+                        </span>
+                        <span className="text-xs text-[var(--pr-muted)]">
+                          {t.submitCard.parsingSub}
+                        </span>
+                      </div>
+                    )}
+
+                    {submitPhase === 'done' && (
+                      <div className="pr-panel-in flex w-full flex-col items-center justify-center gap-1.5">
+                        <CheckCircle2 className="h-5 w-5" style={{ color: 'var(--pr-ok-t)' }} />
+                        <span className="max-w-full truncate font-mono text-xs font-semibold text-[var(--pr-fg)]">
+                          {submittedFileName}
+                        </span>
+                        <span className="text-[11px] text-[var(--pr-muted)]">
+                          {t.submitCard.doneMeta}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScreen('review');
+                            setReviewKey('sample');
+                          }}
+                          className="mt-1 inline-flex cursor-pointer items-center rounded-full bg-[var(--pr-ink)] px-3 py-1 text-[11px] font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90"
                         >
-                          {item.count}
+                          {t.submitCard.goReview}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Printer Fleet Section (Read-only on User Portal) */}
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-baseline justify-between px-1">
+                    <span className="text-sm font-semibold text-[var(--pr-muted)]">
+                      {t.printersHeading}
+                    </span>
+                    <span className="text-xs text-[var(--pr-faint)]">{t.printersCount}</span>
+                  </div>
+                  <PrinterGrid printers={livePrinters} />
+                </div>
+              </div>
+            )}
+
+            {/* Screen 2: Operator Console Overview (ConsoleOverview) */}
+            {screen === 'console' && (
+              <div className="flex flex-col gap-5 p-5 sm:p-7">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
+                      {t.overviewTitle}
+                    </h3>
+                    <span className="rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-2.5 py-0.5 text-xs font-semibold text-[var(--pr-muted)]">
+                      {lang === 'zh-cn' ? '控制台' : 'Console'}
+                    </span>
+                  </div>
+                  <span className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]">
+                    <Bell className="h-4 w-4" />
+                    <i
+                      className="absolute right-2 top-2 h-2 w-2 rounded-full"
+                      style={{ background: 'var(--pr-alert-d)' }}
+                    />
+                  </span>
+                </div>
+
+                {/* Console Top Row: To-do (1.5fr) | Pending Review (1fr) | Site (1fr) */}
+                <div className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr]">
+                  <div className="pr-demo-card flex flex-col justify-between gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4">
+                    <div className="flex items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
+                      <span>
+                        {t.consoleTop.todoPrefix}
+                        {liveTodoCount}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-[var(--pr-muted)]" />
+                    </div>
+                    <ul className="flex flex-col gap-2">
+                      {liveTodos.map((td) => {
+                        const dotColor =
+                          td.tone === 'alert'
+                            ? 'var(--pr-alert-d)'
+                            : td.tone === 'wait'
+                              ? 'var(--pr-wait-d)'
+                              : 'var(--pr-idle-d)';
+                        const actionLabel =
+                          td.id === 'H2D-01'
+                            ? t.consoleActions.reloadBtn
+                            : td.id === 'X2D-02'
+                              ? t.consoleActions.clearBedBtn
+                              : null;
+                        return (
+                          <li key={td.id} className="flex items-center gap-2 text-[13px]">
+                            <i
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ background: dotColor }}
+                            />
+                            <span className="shrink-0 font-mono text-xs font-semibold text-[var(--pr-fg)]">
+                              {td.id}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-[var(--pr-fg2)]">
+                              {td.text}
+                            </span>
+                            {actionLabel ? (
+                              <button
+                                type="button"
+                                onClick={td.id === 'H2D-01' ? handleReloadH2D : handleClearX2D}
+                                className="shrink-0 cursor-pointer rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-2 py-0.5 text-[11px] font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)]"
+                              >
+                                {actionLabel}
+                              </button>
+                            ) : (
+                              <span className="shrink-0 text-xs text-[var(--pr-muted)]">
+                                {td.time}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <span className="text-xs text-[var(--pr-faint)]">{t.consoleTop.todoMore}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setScreen('review')}
+                    className="pr-demo-card group flex w-full cursor-pointer flex-col justify-between gap-2 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 text-left"
+                  >
+                    <div className="flex w-full items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
+                      <span>{t.consoleTop.reviewTitle}</span>
+                      <ChevronRight className="h-4 w-4 text-[var(--pr-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </div>
+                    <div>
+                      <div className="text-3xl font-bold tracking-tight text-[var(--pr-fg)]">
+                        {pendingReviewItems.length} {t.consoleTop.ordersUnit}
+                      </div>
+                      <div className="mt-1 text-xs text-[var(--pr-muted)]">
+                        {pendingReviewItems.length > 0
+                          ? t.consoleTop.reviewSub
+                          : t.consoleTop.reviewSubEmpty}
+                      </div>
+                    </div>
+                    <span className="text-xs text-[var(--pr-faint)]">
+                      {t.consoleTop.reviewFoot}
+                    </span>
+                  </button>
+
+                  <div className="pr-demo-card flex flex-col gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4">
+                    <div className="text-sm font-semibold text-[var(--pr-fg)]">{t.site.title}</div>
+                    <div className="flex flex-col gap-2.5 text-[13px] font-medium text-[var(--pr-fg2)]">
+                      <span className="flex items-center gap-2">
+                        <PrinterMark size={15} />
+                        {liveIdleCount} {t.site.idleUnit}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <ListChecks className="h-4 w-4 text-[var(--pr-muted)]" />
+                        {liveQueuedCount} {t.site.queuedUnit}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-[var(--pr-muted)]" />
+                        {t.site.wait}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-baseline justify-between px-1">
+                    <span className="text-sm font-semibold text-[var(--pr-muted)]">
+                      {t.printersHeading}
+                    </span>
+                    <span className="text-xs text-[var(--pr-faint)]">9</span>
+                  </div>
+                  <PrinterGrid
+                    printers={livePrinters}
+                    resolveLabel={t.consoleActions.reloadBtn}
+                    onResolveAlert={(id) => {
+                      if (id === 'H2D-01') handleReloadH2D();
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Screen 3: Interactive Review Queue (ConsoleReview) */}
+            {screen === 'review' && (
+              <div className="flex flex-col gap-5 p-5 sm:p-7">
+                <div className="flex items-baseline gap-3">
+                  <h3 className="text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
+                    {t.review.title}
+                  </h3>
+                  <span className="text-sm text-[var(--pr-muted)]">
+                    {pendingReviewItems.length} {t.review.pendingSuffix}
+                  </span>
+                </div>
+
+                {activeReview ? (
+                  <div className="grid gap-4 lg:grid-cols-[310px_1fr]">
+                    {/* Left Master List */}
+                    <div className="flex flex-col gap-2">
+                      {pendingReviewItems.map((item) => {
+                        const selected = item.key === activeReview.key;
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => setReviewKey(item.key)}
+                            className={`flex cursor-pointer gap-3 rounded-[14px] p-3 text-left transition-all hover:-translate-y-[1px] ${
+                              selected
+                                ? 'bg-[var(--pr-card)]'
+                                : 'bg-transparent hover:bg-[var(--pr-card)]/60'
+                            }`}
+                            style={{
+                              boxShadow: selected ? 'inset 0 0 0 1.5px var(--pr-fg)' : 'none',
+                            }}
+                          >
+                            <div className="h-12 w-12 shrink-0 rounded-[10px] bg-[var(--pr-sub)]">
+                              <IsometricPlateThumb c1={item.c1} c2={item.c2} c3={item.c3} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-[var(--pr-fg)]">
+                                {item.file}
+                              </div>
+                              <div className="text-xs text-[var(--pr-fg2)]">{item.meta}</div>
+                              <div className="text-xs text-[var(--pr-muted)]">{item.ago}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right Inspection Panel */}
+                    <div
+                      key={activeReview.key}
+                      className="pr-panel-in flex flex-col overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]"
+                    >
+                      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h4 className="text-lg font-bold text-[var(--pr-fg)]">
+                              {activeReview.file}
+                            </h4>
+                            <span className="rounded-full bg-[var(--pr-sub)] px-2.5 py-0.5 text-xs font-semibold text-[var(--pr-fg2)]">
+                              {activeReview.kind}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[var(--pr-muted)]">
+                            <span
+                              className="grid h-5 w-5 place-items-center rounded-full text-[10px] font-semibold text-white"
+                              style={{ background: activeReview.av }}
+                            >
+                              {activeReview.avc}
+                            </span>
+                            <span className="font-medium text-[var(--pr-fg)]">
+                              {activeReview.who}
+                            </span>
+                            <span>
+                              {activeReview.user} · {activeReview.at} ·{' '}
+                              <span className="font-mono">{activeReview.no}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {activeReview.warning && (
+                          <div
+                            className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                            style={{ background: 'var(--pr-wait-s)', color: 'var(--pr-wait-t)' }}
+                          >
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                            <span>{activeReview.warning}</span>
+                          </div>
+                        )}
+
+                        {activeReview.diff && (
+                          <div className="flex flex-col gap-2">
+                            <div className="text-xs font-semibold text-[var(--pr-muted)]">
+                              {activeReview.diff.title}
+                            </div>
+                            <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-1.5 text-[13px]">
+                              <dt className="text-[var(--pr-muted)]">
+                                {activeReview.diff.durLabel}
+                              </dt>
+                              <dd className="text-[var(--pr-fg)]">
+                                {activeReview.diff.durFrom} → <b>{activeReview.diff.durTo}</b>
+                              </dd>
+                              <dt className="text-[var(--pr-muted)]">
+                                {activeReview.diff.massLabel}
+                              </dt>
+                              <dd className="text-[var(--pr-fg)]">{activeReview.diff.massVal}</dd>
+                            </dl>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-[var(--pr-muted)]">
+                              {t.review.fileSection}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => showToast(t.review.downloadToast)}
+                              className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--pr-sub)] px-3 text-xs font-medium text-[var(--pr-fg)] transition-opacity hover:opacity-80"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              {t.review.download}
+                            </button>
+                          </div>
+
+                          <div className="pr-demo-card flex flex-col gap-3 rounded-[14px] border border-[var(--pr-line)] p-4 sm:flex-row">
+                            <div className="h-20 w-20 shrink-0 rounded-[10px] bg-[var(--pr-sub)]">
+                              <IsometricPlateThumb
+                                c1={activeReview.c1}
+                                c2={activeReview.c2}
+                                c3={activeReview.c3}
+                              />
+                            </div>
+                            <div className="flex flex-1 flex-col gap-2">
+                              <div className="text-[13px] font-semibold text-[var(--pr-fg)]">
+                                {t.review.plateLabel}
+                                <span className="font-normal text-[var(--pr-muted)]">
+                                  {t.review.plateTotal}
+                                </span>
+                              </div>
+                              <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1 text-xs">
+                                <dt className="text-[var(--pr-muted)]">{t.review.machineKey}</dt>
+                                <dd className="text-[var(--pr-fg)]">{t.review.machineVal}</dd>
+                                <dt className="text-[var(--pr-muted)]">{t.review.plateKey}</dt>
+                                <dd className="text-[var(--pr-fg)]">{t.review.plateVal}</dd>
+                                <dt className="text-[var(--pr-muted)]">{t.review.estKey}</dt>
+                                <dd className="text-[var(--pr-fg)]">
+                                  {activeReview.dur} · {activeReview.grams}
+                                </dd>
+                              </dl>
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--pr-sub)] px-2.5 py-1 text-xs text-[var(--pr-fg)]">
+                                  <i
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{ background: activeReview.c1 }}
+                                  />
+                                  {activeReview.fil}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-semibold text-[var(--pr-muted)]">
+                            {t.review.infoSection}
+                          </span>
+                          <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1 text-xs">
+                            <dt className="text-[var(--pr-muted)]">{t.review.reasonKey}</dt>
+                            <dd className="text-[var(--pr-fg)]">{activeReview.reason}</dd>
+                            <dt className="text-[var(--pr-muted)]">{t.review.colorKey}</dt>
+                            <dd className="text-[var(--pr-fg)]">{t.review.colorVal}</dd>
+                          </dl>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 border-t border-[var(--pr-line)] px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => handleReviewDecision('rejected')}
+                          className="inline-flex h-9 cursor-pointer items-center rounded-full bg-[var(--pr-sub)] px-5 text-xs font-semibold text-[var(--pr-fg)] transition-opacity hover:opacity-80"
+                        >
+                          {t.review.reject}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReviewDecision('approved')}
+                          className="inline-flex h-9 cursor-pointer items-center rounded-full bg-[var(--pr-ink)] px-5 text-xs font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90"
+                        >
+                          {t.review.approve}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pr-panel-in flex min-h-[400px] flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-8 text-center">
+                    <CheckCircle2 className="h-8 w-8" style={{ color: 'var(--pr-ok-t)' }} />
+                    <h4 className="text-base font-bold text-[var(--pr-fg)]">{t.review.emptyTitle}</h4>
+                    <p className="max-w-sm text-xs leading-relaxed text-[var(--pr-muted)]">
+                      {t.review.emptySub}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                      {submitPhase === 'idle' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStartSubmit(undefined, true)}
+                          className="inline-flex h-9 cursor-pointer items-center rounded-full bg-[var(--pr-ink)] px-4 text-xs font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90"
+                        >
+                          {t.review.submitSampleBtn}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleReset}
+                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-4 text-xs font-semibold text-[var(--pr-fg)] transition-opacity hover:opacity-85"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        {t.resetLabel}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Screen 4: Pickup Code Modal (DesktopPickup) */}
+            {screen === 'pickup' && (
+              <div className="relative grid min-h-[540px] place-items-center bg-[var(--pr-page)] p-6 sm:p-10">
+                <div className="pointer-events-none absolute inset-0 bg-black/30" />
+
+                <div
+                  onMouseMove={handlePassMove}
+                  onMouseLeave={handlePassLeave}
+                  style={{
+                    transform: `perspective(900px) translateY(${passTilt.active ? '-2px' : '0px'}) rotateX(${passTilt.rx.toFixed(2)}deg) rotateY(${passTilt.ry.toFixed(2)}deg)`,
+                    boxShadow: passTilt.active
+                      ? '0 28px 60px rgba(0, 0, 0, 0.28)'
+                      : '0 20px 50px rgba(0, 0, 0, 0.22)',
+                    transition: passTilt.active
+                      ? 'transform 90ms ease-out, box-shadow 200ms ease'
+                      : 'transform 360ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms ease',
+                    willChange: 'transform',
+                  }}
+                  className="relative z-10 flex w-full max-w-[360px] flex-col items-center gap-4 overflow-hidden rounded-[20px] border border-[var(--pr-line)] bg-[var(--pr-card)] px-7 py-7 text-center"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-[20px] transition-opacity duration-200"
+                    style={{
+                      opacity: passTilt.active ? 1 : 0,
+                      background: `radial-gradient(280px circle at ${passTilt.px.toFixed(1)}% ${passTilt.py.toFixed(1)}%, var(--pr-pass-sheen), transparent 65%)`,
+                    }}
+                  />
+                  <div className="relative z-10 flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-1.5 text-base font-bold text-[var(--pr-fg)]">
+                      <QrCode className="h-4 w-4 text-[var(--pr-muted)]" />
+                      <span>{t.pickup.title}</span>
+                      {pickupVerified && (
+                        <span
+                          className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          style={{ background: 'var(--pr-ok-s)', color: 'var(--pr-ok-t)' }}
+                        >
+                          {t.pickup.verifiedBadge}
                         </span>
                       )}
                     </div>
-                  );
-                })}
+                    <span className="text-xs text-[var(--pr-muted)]">{t.pickup.shelf}</span>
+                  </div>
 
-                <div className="px-2.5 pb-1 pt-2.5 text-[11px] font-semibold text-[var(--pr-faint)]">
-                  {t.consoleNav.opsLabel}
-                </div>
-                {[
-                  { label: t.consoleNav.ops[0], icon: Database },
-                  { label: t.consoleNav.ops[1], icon: FileText },
-                  { label: t.consoleNav.ops[2], icon: Megaphone },
-                  { label: t.consoleNav.ops[3], icon: Users },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.label}
-                      className="flex h-8 items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] font-medium text-[var(--pr-fg2)]"
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
+                  {/* QR always on white surface for scannability */}
+                  <div className="relative z-10 rounded-2xl border border-[#e5e5e5] bg-white p-3.5">
+                    <div className={pickupVerified ? 'opacity-30 transition-opacity' : ''}>
+                      <PickupQrSvg />
                     </div>
-                  );
-                })}
-
-                <div className="px-2.5 pb-1 pt-2.5 text-[11px] font-semibold text-[var(--pr-faint)]">
-                  {t.consoleNav.sysLabel}
-                </div>
-                {[
-                  { label: t.consoleNav.sys[0], icon: Server },
-                  { label: t.consoleNav.sys[1], icon: History },
-                  { label: t.consoleNav.sys[2], icon: Settings },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.label}
-                      className="flex h-8 items-center gap-2.5 rounded-[10px] px-2.5 text-[13px] font-medium text-[var(--pr-fg2)]"
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3 flex items-center gap-2.5 rounded-xl p-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#14b8a6] text-xs font-semibold text-white">
-                  {t.consoleNav.user.slice(0, 1)}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-[13px] font-semibold text-[var(--pr-fg)]">
-                    {t.consoleNav.user}
+                    {pickupVerified && (
+                      <div className="pr-panel-in absolute inset-0 grid place-items-center">
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shadow-sm"
+                          style={{ background: 'var(--pr-ok-s)', color: 'var(--pr-ok-t)' }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          {t.pickup.verifiedBadge}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="truncate text-[11px] text-[var(--pr-muted)]">
-                    {t.consoleNav.role}
-                  </div>
-                </div>
-              </div>
-            </aside>
 
-            <div className="flex flex-col gap-4 p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold tracking-tight text-[var(--pr-fg)]">
-                  {t.overviewTitle}
-                </h3>
-                <span className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg)]">
-                  <Bell className="h-4 w-4" />
-                  <i
-                    className="absolute right-2 top-2 h-2 w-2 rounded-full"
-                    style={{ background: 'var(--pr-alert-d)' }}
-                  />
-                </span>
-              </div>
-
-              {/* Console Top Row: To-do (1.5fr) | Pending Review (1fr) | Site (1fr) */}
-              <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_1fr]">
-                <div className="flex flex-col justify-between gap-2.5 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                  <div className="flex items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
-                    <span>{t.consoleTop.todoTitle}</span>
-                    <ChevronRight className="h-4 w-4 text-[var(--pr-muted)]" />
-                  </div>
-                  <ul className="flex flex-col gap-2">
-                    {t.consoleTop.todos.map((td) => {
-                      const dotColor =
-                        td.tone === 'alert'
-                          ? 'var(--pr-alert-d)'
-                          : td.tone === 'wait'
-                            ? 'var(--pr-wait-d)'
-                            : 'var(--pr-idle-d)';
-                      return (
-                        <li key={td.id} className="flex items-center gap-2 text-xs">
-                          <i
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ background: dotColor }}
-                          />
-                          <span className="shrink-0 font-mono font-semibold text-[var(--pr-fg)]">
-                            {td.id}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-[var(--pr-fg2)]">
-                            {td.text}
-                          </span>
-                          <span className="shrink-0 text-[11px] text-[var(--pr-muted)]">
-                            {td.time}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <span className="text-[11px] text-[var(--pr-faint)]">
-                    {t.consoleTop.todoMore}
-                  </span>
-                </div>
-
-                <div className="flex flex-col justify-between gap-2 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                  <div className="flex items-center justify-between text-sm font-semibold text-[var(--pr-fg)]">
-                    <span>{t.consoleTop.reviewTitle}</span>
-                    <ChevronRight className="h-4 w-4 text-[var(--pr-muted)]" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
-                      {t.consoleTop.reviewCount}
-                    </div>
-                    <div className="text-xs text-[var(--pr-muted)]">{t.consoleTop.reviewSub}</div>
-                  </div>
-                  <span className="text-[11px] text-[var(--pr-faint)]">
-                    {t.consoleTop.reviewFoot}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2.5 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-3.5">
-                  <div className="text-sm font-semibold text-[var(--pr-fg)]">{t.site.title}</div>
-                  <div className="flex flex-col gap-2 text-[13px] font-medium text-[var(--pr-fg2)]">
-                    <span className="flex items-center gap-2">
-                      <PrinterMark size={15} />
-                      {t.site.idle}
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="relative z-10 inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[14px] bg-[var(--pr-sub)] px-4 text-[var(--pr-fg)] transition-opacity hover:opacity-85"
+                  >
+                    <span className="font-mono text-2xl font-semibold tracking-[3px]">
+                      K7Q4-M9XR
                     </span>
-                    <span className="flex items-center gap-2">
-                      <ListChecks className="h-4 w-4 text-[var(--pr-muted)]" />
-                      {t.site.queued}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-[var(--pr-muted)]" />
-                      {t.site.wait}
+                    {copied ? (
+                      <Check className="h-4 w-4" style={{ color: 'var(--pr-ok-t)' }} />
+                    ) : (
+                      <Copy className="h-4 w-4 text-[var(--pr-muted)]" />
+                    )}
+                  </button>
+
+                  <div className="relative z-10 flex items-center gap-1.5 text-xs text-[var(--pr-muted)]">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>
+                      {copied
+                        ? t.pickup.copiedText
+                        : pickupVerified
+                          ? t.pickup.verifiedMeta
+                          : t.pickup.expires}
                     </span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTogglePickup}
+                    className="relative z-10 inline-flex h-8 cursor-pointer items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-3.5 text-[11px] font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)]"
+                  >
+                    {pickupVerified ? t.pickup.undoBtn : t.pickup.simulateBtn}
+                  </button>
                 </div>
               </div>
-
-              <PrinterGrid printers={t.printers} />
-            </div>
+            )}
           </div>
-        )}
-
-        {/* Screen 3: Interactive Review Queue (ConsoleReview) */}
-        {screen === 'review' && (
-          <div className="flex flex-col gap-4 p-4 sm:p-6">
-            <div className="flex items-baseline gap-3">
-              <h3 className="text-xl font-bold tracking-tight text-[var(--pr-fg)]">
-                {t.review.title}
-              </h3>
-              <span className="text-xs text-[var(--pr-muted)]">{t.review.sub}</span>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[290px_1fr]">
-              {/* Left Master List */}
-              <div className="flex flex-col gap-2">
-                {t.review.list.map((item) => {
-                  const selected = item.key === activeReview.key;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setReviewKey(item.key)}
-                      className={`flex cursor-pointer gap-3 rounded-[14px] p-3 text-left transition-all ${
-                        selected ? 'bg-[var(--pr-card)]' : 'bg-transparent hover:bg-[var(--pr-card)]/60'
-                      }`}
-                      style={{
-                        boxShadow: selected ? 'inset 0 0 0 1.5px var(--pr-fg)' : 'none',
-                      }}
-                    >
-                      <div className="h-12 w-12 shrink-0 rounded-[10px] bg-[var(--pr-sub)]">
-                        <IsometricPlateThumb c1={item.c1} c2={item.c2} c3={item.c3} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-semibold text-[var(--pr-fg)]">
-                          {item.file}
-                        </div>
-                        <div className="text-xs text-[var(--pr-fg2)]">{item.meta}</div>
-                        <div className="text-[11px] text-[var(--pr-muted)]">{item.ago}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Right Inspection Panel */}
-              <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
-                <div className="flex flex-col gap-4 p-5">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h4 className="text-base font-bold text-[var(--pr-fg)]">
-                        {activeReview.file}
-                      </h4>
-                      <span className="rounded-full bg-[var(--pr-sub)] px-2.5 py-0.5 text-xs font-semibold text-[var(--pr-fg2)]">
-                        {activeReview.kind}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[var(--pr-muted)]">
-                      <span
-                        className="grid h-5 w-5 place-items-center rounded-full text-[10px] font-semibold text-white"
-                        style={{ background: activeReview.av }}
-                      >
-                        {activeReview.avc}
-                      </span>
-                      <span className="font-medium text-[var(--pr-fg)]">{activeReview.who}</span>
-                      <span>
-                        {activeReview.user} · {activeReview.at} ·{' '}
-                        <span className="font-mono">{activeReview.no}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {'warning' in activeReview && activeReview.warning && (
-                    <div
-                      className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-medium"
-                      style={{ background: 'var(--pr-wait-s)', color: 'var(--pr-wait-t)' }}
-                    >
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>{activeReview.warning}</span>
-                    </div>
-                  )}
-
-                  {'diff' in activeReview && activeReview.diff && (
-                    <div className="flex flex-col gap-2">
-                      <div className="text-xs font-semibold text-[var(--pr-muted)]">
-                        {activeReview.diff.title}
-                      </div>
-                      <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-1.5 text-[13px]">
-                        <dt className="text-[var(--pr-muted)]">{activeReview.diff.durLabel}</dt>
-                        <dd className="text-[var(--pr-fg)]">
-                          {activeReview.diff.durFrom} → <b>{activeReview.diff.durTo}</b>
-                        </dd>
-                        <dt className="text-[var(--pr-muted)]">{activeReview.diff.massLabel}</dt>
-                        <dd className="text-[var(--pr-fg)]">{activeReview.diff.massVal}</dd>
-                      </dl>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[var(--pr-muted)]">
-                        {t.review.fileSection}
-                      </span>
-                      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[var(--pr-sub)] px-3 text-xs font-medium text-[var(--pr-fg)]">
-                        <Download className="h-3.5 w-3.5" />
-                        {t.review.download}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-3 rounded-[14px] border border-[var(--pr-line)] p-3.5 sm:flex-row">
-                      <div className="h-20 w-20 shrink-0 rounded-[10px] bg-[var(--pr-sub)]">
-                        <IsometricPlateThumb
-                          c1={activeReview.c1}
-                          c2={activeReview.c2}
-                          c3={activeReview.c3}
-                        />
-                      </div>
-                      <div className="flex flex-1 flex-col gap-2">
-                        <div className="text-[13px] font-semibold text-[var(--pr-fg)]">
-                          {t.review.plateLabel}
-                          <span className="font-normal text-[var(--pr-muted)]">
-                            {t.review.plateTotal}
-                          </span>
-                        </div>
-                        <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1 text-xs">
-                          <dt className="text-[var(--pr-muted)]">{t.review.machineKey}</dt>
-                          <dd className="text-[var(--pr-fg)]">{t.review.machineVal}</dd>
-                          <dt className="text-[var(--pr-muted)]">{t.review.plateKey}</dt>
-                          <dd className="text-[var(--pr-fg)]">{t.review.plateVal}</dd>
-                          <dt className="text-[var(--pr-muted)]">{t.review.estKey}</dt>
-                          <dd className="text-[var(--pr-fg)]">
-                            {activeReview.dur} · {activeReview.grams}
-                          </dd>
-                        </dl>
-                        <div>
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--pr-sub)] px-2.5 py-1 text-xs text-[var(--pr-fg)]">
-                            <i
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{ background: activeReview.c1 }}
-                            />
-                            {activeReview.fil}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold text-[var(--pr-muted)]">
-                      {t.review.infoSection}
-                    </span>
-                    <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1 text-xs">
-                      <dt className="text-[var(--pr-muted)]">{t.review.reasonKey}</dt>
-                      <dd className="text-[var(--pr-fg)]">{activeReview.reason}</dd>
-                      <dt className="text-[var(--pr-muted)]">{t.review.colorKey}</dt>
-                      <dd className="text-[var(--pr-fg)]">{t.review.colorVal}</dd>
-                    </dl>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 border-t border-[var(--pr-line)] px-5 py-3">
-                  <span className="inline-flex h-9 items-center rounded-full bg-[var(--pr-sub)] px-5 text-xs font-semibold text-[var(--pr-fg)]">
-                    {t.review.reject}
-                  </span>
-                  <span className="inline-flex h-9 items-center rounded-full bg-[var(--pr-ink)] px-5 text-xs font-semibold text-[var(--pr-ink-fg)]">
-                    {t.review.approve}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Screen 4: Pickup Code Modal (DesktopPickup) */}
-        {screen === 'pickup' && (
-          <div className="relative grid min-h-[420px] place-items-center bg-[var(--pr-page)] p-6 sm:p-10">
-            {/* Subtle dimmed background orders context */}
-            <div className="pointer-events-none absolute inset-0 bg-black/30" />
-
-            <div className="relative z-10 flex w-full max-w-[360px] flex-col items-center gap-4 rounded-[20px] border border-[var(--pr-line)] bg-[var(--pr-card)] px-7 py-7 text-center shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
-              <div className="flex flex-col items-center gap-1">
-                <div className="flex items-center gap-1.5 text-base font-bold text-[var(--pr-fg)]">
-                  <QrCode className="h-4 w-4 text-[var(--pr-muted)]" />
-                  <span>{t.pickup.title}</span>
-                </div>
-                <span className="text-xs text-[var(--pr-muted)]">{t.pickup.shelf}</span>
-              </div>
-
-              {/* QR always on white surface for scannability */}
-              <div className="rounded-2xl border border-[#e5e5e5] bg-white p-3.5">
-                <PickupQrSvg />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyCode}
-                className="inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[14px] bg-[var(--pr-sub)] px-4 text-[var(--pr-fg)] transition-opacity hover:opacity-85"
-              >
-                <span className="font-mono text-2xl font-semibold tracking-[3px]">
-                  K7Q4-M9XR
-                </span>
-                {copied ? (
-                  <Check className="h-4 w-4" style={{ color: 'var(--pr-ok-t)' }} />
-                ) : (
-                  <Copy className="h-4 w-4 text-[var(--pr-muted)]" />
-                )}
-              </button>
-
-              <div className="flex items-center gap-1.5 text-xs text-[var(--pr-muted)]">
-                <Clock className="h-3.5 w-3.5" />
-                <span>{copied ? t.pickup.copiedText : t.pickup.expires}</span>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
