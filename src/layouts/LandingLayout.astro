@@ -1,20 +1,25 @@
 ---
 import '../styles/global.css';
+import { landing, type Lang } from '../i18n/landing';
 
 interface Props {
-  title: string;
-  description: string;
-  lang: 'en' | 'zh-cn';
+  lang: Lang;
 }
 
-const { title, description, lang } = Astro.props;
+const { lang } = Astro.props;
+const n = landing[lang].nav;
+const { title, description } = landing[lang].meta;
+const footerTagline = landing[lang].footer.tagline;
 const isZh = lang === 'zh-cn';
 const htmlLang = isZh ? 'zh-CN' : 'en';
 const homeHref = isZh ? '/zh-cn/' : '/';
 const overviewHref = isZh ? '/zh-cn/docs/overview/' : '/docs/overview/';
 const archHref = isZh ? '/zh-cn/docs/architecture/' : '/docs/architecture/';
 const otherLangHref = isZh ? '/' : '/zh-cn/';
-const otherLangLabel = isZh ? 'EN' : '中文';
+const site = Astro.site ?? new URL('https://platerelay.app');
+const canonical = new URL(homeHref, site).href;
+const enHref = new URL('/', site).href;
+const zhHref = new URL('/zh-cn/', site).href;
 ---
 
 <!doctype html>
@@ -25,17 +30,28 @@ const otherLangLabel = isZh ? 'EN' : '中文';
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
-    />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={enHref} />
+    <link rel="alternate" hreflang="zh-CN" href={zhHref} />
+    <link rel="alternate" hreflang="x-default" href={enHref} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PlateRelay" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={isZh ? 'zh_CN' : 'en_US'} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="color-scheme" content="light dark" />
     <script is:inline>
       (() => {
         document.documentElement.classList.add('pr-js');
-        const stored = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
-        const theme = stored === 'light' || stored === 'dark' ? stored : 'light';
+        let stored = null;
+        try {
+          stored = localStorage.getItem('starlight-theme');
+        } catch {}
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light';
         document.documentElement.dataset.theme = theme;
       })();
     </script>
@@ -50,29 +66,29 @@ const otherLangLabel = isZh ? 'EN' : '中文';
 
         <nav class="hidden items-center gap-7 text-sm font-medium text-[var(--pr-muted)] md:flex">
           <a href={overviewHref} class="transition-colors hover:text-[var(--pr-fg)]">
-            {isZh ? '文档' : 'Docs'}
+            {n.docs}
           </a>
-          <a href={archHref} class="transition-colors hover:text-[var(--pr-fg)]">
-            {isZh ? '架构' : 'Architecture'}
+          <a href="#architecture" class="transition-colors hover:text-[var(--pr-fg)]">
+            {n.architecture}
           </a>
           <a href="#roadmap" class="transition-colors hover:text-[var(--pr-fg)]">
-            {isZh ? '路线图' : 'Roadmap'}
+            {n.roadmap}
           </a>
         </nav>
 
         <div class="flex items-center gap-2">
           <a
             href={otherLangHref}
-            class="inline-flex h-8 items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-3 text-xs font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
-            title={isZh ? 'Switch to English' : '切换为简体中文'}
+            class="hidden h-8 items-center md:inline-flex rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-3 text-xs font-medium text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
+            title={n.switchLangTitle}
           >
-            {otherLangLabel}
+            {n.switchLangShort}
           </a>
 
           <button
             type="button"
             id="pr-theme-toggle"
-            aria-label={isZh ? '切换深浅色主题' : 'Toggle color theme'}
+            aria-label={n.toggleTheme}
             class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)]"
           >
             <svg class="pr-icon-sun hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -98,8 +114,37 @@ const otherLangLabel = isZh ? 'EN' : '中文';
             </svg>
             <span>GitHub</span>
           </a>
+
+          <button
+            type="button"
+            id="pr-menu-toggle"
+            aria-label={n.openMenu}
+            aria-expanded="false"
+            aria-controls="pr-mobile-menu"
+            class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] text-[var(--pr-fg2)] transition-colors hover:border-[var(--pr-line2)] hover:text-[var(--pr-fg)] md:hidden"
+          >
+            <svg class="pr-icon-menu h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path>
+            </svg>
+            <svg class="pr-icon-close hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+            </svg>
+          </button>
         </div>
       </div>
+
+      <nav
+        id="pr-mobile-menu"
+        hidden
+        class="border-t border-[var(--pr-line)] px-5 py-2 text-[15px] font-medium text-[var(--pr-fg)] sm:px-8 md:hidden"
+      >
+        <a href={overviewHref} class="block py-2.5">{n.docs}</a>
+        <a href="#architecture" class="block py-2.5">{n.architecture}</a>
+        <a href="#roadmap" class="block py-2.5">{n.roadmap}</a>
+        <a href={otherLangHref} class="block border-t border-[var(--pr-line)] py-2.5 text-[var(--pr-fg2)]">
+          {n.switchLang}
+        </a>
+      </nav>
     </header>
 
     <main>
@@ -112,22 +157,36 @@ const otherLangLabel = isZh ? 'EN' : '中文';
           <img src="/favicon.svg" alt="" class="h-5 w-5 rounded" />
           <span class="font-semibold text-[var(--pr-fg)]">PlateRelay</span>
           <span class="text-[var(--pr-faint)]">·</span>
-          <span>{isZh ? '开源自托管共享 3D 打印平台' : 'Open-source shared 3D printing platform'}</span>
+          <span>{footerTagline}</span>
           <span class="rounded border border-[var(--pr-line)] px-1.5 py-0.5 font-mono text-[10px]">
             GPL-3.0-only
           </span>
         </div>
         <div class="flex flex-wrap items-center gap-5">
-          <a href={overviewHref} class="transition-colors hover:text-[var(--pr-fg)]">{isZh ? '文档' : 'Docs'}</a>
-          <a href={archHref} class="transition-colors hover:text-[var(--pr-fg)]">{isZh ? '架构' : 'Architecture'}</a>
+          <a href={overviewHref} class="transition-colors hover:text-[var(--pr-fg)]">{n.docs}</a>
+          <a href={archHref} class="transition-colors hover:text-[var(--pr-fg)]">{n.architecture}</a>
           <a href="https://github.com/PlateRelay/PlateRelay" target="_blank" rel="noopener noreferrer" class="transition-colors hover:text-[var(--pr-fg)]">GitHub</a>
           <a href="https://github.com/PlateRelay/PlateRelay/issues" target="_blank" rel="noopener noreferrer" class="transition-colors hover:text-[var(--pr-fg)]">Issues</a>
-          <a href={otherLangHref} class="transition-colors hover:text-[var(--pr-fg)]">{isZh ? 'English' : '简体中文'}</a>
+          <a href={otherLangHref} class="transition-colors hover:text-[var(--pr-fg)]">{n.switchLang}</a>
         </div>
       </div>
     </footer>
 
     <script is:inline>
+      (() => {
+        const btn = document.getElementById('pr-menu-toggle');
+        const menu = document.getElementById('pr-mobile-menu');
+        if (!btn || !menu) return;
+        const setOpen = (open) => {
+          menu.hidden = !open;
+          btn.setAttribute('aria-expanded', String(open));
+          btn.querySelector('.pr-icon-menu')?.classList.toggle('hidden', open);
+          btn.querySelector('.pr-icon-close')?.classList.toggle('hidden', !open);
+        };
+        btn.addEventListener('click', () => setOpen(menu.hidden));
+        menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+      })();
+
       (() => {
         const btn = document.getElementById('pr-theme-toggle');
         if (!btn) return;

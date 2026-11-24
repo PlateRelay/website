@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import starlightThemeBlack from 'starlight-theme-black';
 
 export default defineConfig({
+  site: 'https://platerelay.app',
   integrations: [
     starlight({
       title: 'PlateRelay',
@@ -38,27 +39,6 @@ export default defineConfig({
             'PlateRelay — Open-source self-hosted 3D printing platform · [GitHub](https://github.com/PlateRelay/PlateRelay) · GPL-3.0-only',
         }),
       ],
-      head: [
-        {
-          tag: 'link',
-          attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'preconnect',
-            href: 'https://fonts.gstatic.com',
-            crossorigin: 'anonymous',
-          },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'stylesheet',
-            href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap',
-          },
-        },
-      ],
       social: [
         {
           icon: 'github',
@@ -85,6 +65,7 @@ export default defineConfig({
           items: [
             { slug: 'docs/overview' },
             { slug: 'docs/getting-started' },
+            { slug: 'docs/contributing' },
           ],
         },
         {
@@ -95,11 +76,6 @@ export default defineConfig({
             { slug: 'docs/server' },
             { slug: 'docs/daemon' },
           ],
-        },
-        {
-          label: 'Contributing',
-          translations: { 'zh-CN': '参与贡献' },
-          items: [{ slug: 'docs/contributing' }],
         },
       ],
     }),
