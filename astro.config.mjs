@@ -9,6 +9,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'PlateRelay',
+      routeMiddleware: './src/routeData.ts',
       favicon: '/favicon.svg',
       logo: {
         src: './src/assets/logo.svg',
