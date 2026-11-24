@@ -1,0 +1,36 @@
+---
+// Wide diagram from the lg breakpoint up, stacked vertical version below it,
+// so phones and tablets never need to scroll sideways.
+interface Props {
+  name: 'workflow' | 'architecture';
+  suffix: string;
+  alt: string;
+  wide: [number, number];
+  tall: [number, number];
+}
+const { name, suffix, alt, wide, tall } = Astro.props;
+const variants = [
+  { box: 'hidden lg:block', file: `${name}${suffix}`, size: wide },
+  { box: 'lg:hidden', file: `${name}-vertical${suffix}`, size: tall },
+];
+---
+
+<div class="mt-8 rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 sm:p-6">
+  {
+    variants.map(({ box, file, size }) => (
+      <div class={`${box} text-center`}>
+        {['light', 'dark'].map((theme) => (
+          <img
+            class={`pr-theme-${theme} mx-auto h-auto w-full`}
+            style={`max-width: ${size[0]}px`}
+            src={`/assets/${file}-${theme}.svg`}
+            alt={alt}
+            width={size[0]}
+            height={size[1]}
+            loading="lazy"
+          />
+        ))}
+      </div>
+    ))
+  }
+</div>

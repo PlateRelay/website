@@ -5,10 +5,6 @@ description: What PlateRelay is, why it exists for shared 3D printing spaces, an
 
 **PlateRelay** is an open-source, self-hosted 3D printing platform built for shared-printer environments such as hackathons, makerspaces, and university labs. It combines centralized multi-printer management with auditable review, scheduling, and fulfillment workflows while isolating regular users from physical hardware.
 
-:::caution[Work in Progress]
-PlateRelay is still in early development (WIP), and the official documentation is actively under construction. The current pages are LLM-generated placeholders for temporary reference only and may drift from the latest implementation—they will be rewritten and replaced over time. Please refer to the [PlateRelay/PlateRelay](https://github.com/PlateRelay/PlateRelay) repository and README as the source of truth.
-:::
-
 ## How PlateRelay Differs from Traditional Print Farms
 
 Traditional print farm tools assume a private fleet operated directly by internal staff. Shared public spaces need strict boundaries:

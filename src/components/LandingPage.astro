@@ -1,4 +1,5 @@
 ---
+import Diagram from './Diagram.astro';
 import ProductPreview from './ProductPreview';
 import { landing, type Lang } from '../i18n/landing';
 
@@ -72,24 +73,7 @@ const cardClass =
       <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)] sm:text-base">{t.workflow.subtitle}</p>
     </div>
 
-    <div class="pr-noscrollbar mt-8 overflow-x-auto rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 sm:p-6">
-      <img
-        class="pr-theme-light mx-auto h-auto w-full min-w-[720px] max-w-[964px]"
-        src={`/assets/workflow${svgSuffix}-light.svg`}
-        alt={t.workflow.alt}
-        width="964"
-        height="136"
-        loading="lazy"
-      />
-      <img
-        class="pr-theme-dark mx-auto h-auto w-full min-w-[720px] max-w-[964px]"
-        src={`/assets/workflow${svgSuffix}-dark.svg`}
-        alt={t.workflow.alt}
-        width="964"
-        height="136"
-        loading="lazy"
-      />
-    </div>
+    <Diagram name="workflow" suffix={svgSuffix} alt={t.workflow.alt} wide={[964, 136]} tall={[320, 460]} />
   </div>
 </section>
 
@@ -150,24 +134,7 @@ const cardClass =
       <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)] sm:text-base">{t.architecture.subtitle}</p>
     </div>
 
-    <div class="pr-noscrollbar mt-8 overflow-x-auto rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 sm:p-6">
-      <img
-        class="pr-theme-light mx-auto h-auto w-full min-w-[640px] max-w-[964px]"
-        src={`/assets/architecture${svgSuffix}-light.svg`}
-        alt={t.architecture.alt}
-        width="964"
-        height="252"
-        loading="lazy"
-      />
-      <img
-        class="pr-theme-dark mx-auto h-auto w-full min-w-[640px] max-w-[964px]"
-        src={`/assets/architecture${svgSuffix}-dark.svg`}
-        alt={t.architecture.alt}
-        width="964"
-        height="252"
-        loading="lazy"
-      />
-    </div>
+    <Diagram name="architecture" suffix={svgSuffix} alt={t.architecture.alt} wide={[964, 252]} tall={[336, 424]} />
 
     <div class="mt-5 grid gap-5 md:grid-cols-3">
       {t.architecture.items.map((item) => (

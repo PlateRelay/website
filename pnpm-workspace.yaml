@@ -4,3 +4,5 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
+patchedDependencies:
+  starlight-theme-black@0.6.0: patches/starlight-theme-black@0.6.0.patch

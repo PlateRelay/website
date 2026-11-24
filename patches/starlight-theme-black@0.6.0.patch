@@ -1,0 +1,86 @@
+diff --git a/src/components/Drawer.astro b/src/components/Drawer.astro
+index cdce34096ffd269a28dcd935ded5c4559a45fafc..0b604390100b85226198b2c313338b45afaac035 100644
+--- a/src/components/Drawer.astro
++++ b/src/components/Drawer.astro
+@@ -14,7 +14,6 @@ const { siteTitleHref, sidebar } = Astro.locals.starlightRoute
+     </div>
+     <div class="body">
+       <div class="links-nav">
+-        <a href={siteTitleHref}>{Astro.locals.t('theme-black.home')}</a>
+         {
+           userConfig.navLinks?.map((nav) => {
+             const absoluteLinkRegex = /^https?:\/\//
+@@ -23,7 +22,7 @@ const { siteTitleHref, sidebar } = Astro.locals.starlightRoute
+               !absoluteLinkRegex.test(nav.link) && Astro.currentLocale
+                 ? getRelativeLocaleUrl(Astro.currentLocale, nav.link)
+                 : nav.link
+-            const label = typeof nav.label === 'string' ? nav.label : getTranslation(nav.label, nav.link, 'label')
++            const label = typeof nav.label === 'string' ? nav.label : getTranslation(nav.label, nav.link, 'label', Astro.currentLocale)
+ 
+             return (
+               <a href={link} {...nav.attrs}>
+diff --git a/src/components/NavBar.astro b/src/components/NavBar.astro
+index 679d40c60c89322d178e299720fc41b204461487..e0b17a546b372edae4e7a7703c982694f19cb7bb 100644
+--- a/src/components/NavBar.astro
++++ b/src/components/NavBar.astro
+@@ -6,9 +6,8 @@ import { getRelativeLocaleUrl } from 'astro:i18n'
+ 
+ const currentPath = Astro.url.pathname
+ 
+-const defaultLang = starlightConfig.defaultLocale?.lang || starlightConfig.defaultLocale?.locale || 'en'
+-
+-export function getTranslation(translations: Record<string, string>, link: string, description: string) {
++export function getTranslation(translations: Record<string, string>, link: string, description: string, currentLocale?: string) {
++  const defaultLang = starlightConfig.defaultLocale?.lang || starlightConfig.defaultLocale?.locale || 'en'
+   const defaultTranslation = translations[defaultLang]
+ 
+   if (!defaultTranslation) {
+@@ -20,8 +19,8 @@ export function getTranslation(translations: Record<string, string>, link: strin
+ 
+   let translation = defaultTranslation
+ 
+-  if (Astro.currentLocale) {
+-    translation = translations[Astro.currentLocale] ?? defaultTranslation
++  if (currentLocale) {
++    translation = translations[currentLocale] ?? defaultTranslation
+   }
+ 
+   return translation
+@@ -37,7 +36,7 @@ export function getTranslation(translations: Record<string, string>, link: strin
+         !absoluteLinkRegex.test(nav.link) && Astro.currentLocale
+           ? getRelativeLocaleUrl(Astro.currentLocale, nav.link)
+           : nav.link
+-      const label = typeof nav.label === 'string' ? nav.label : getTranslation(nav.label, nav.link, 'label')
++      const label = typeof nav.label === 'string' ? nav.label : getTranslation(nav.label, nav.link, 'label', Astro.currentLocale)
+ 
+       return (
+         <a class:list={[{ active: currentPath === link }]} href={link} {...nav.attrs}>
+diff --git a/src/index.ts b/src/index.ts
+index 9fc9c9f8955499a93e0749e47cc59b0e0a5c411e..d152450a6c416ae13540b971533e227cd469ddfd 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -112,6 +112,11 @@ export default function starlightThemeBlack(userConfig: StarlightThemeBlackUserC
+             'theme-black.links.doc': 'Docs',
+             'theme-black.links.api': 'API Reference',
+           },
++          'zh-CN': {
++            'theme-black.home': '首页',
++            'theme-black.links.doc': '文档',
++            'theme-black.links.api': 'API 参考',
++          },
+           es: {
+             'theme-black.home': 'Inicio',
+             'theme-black.links.doc': 'Docs',
+diff --git a/src/overrides/PageTitle.astro b/src/overrides/PageTitle.astro
+index 691d63dce8148134a658438b4821dbe85c7d2315..08c6148a8b1065fd51ade41bf6ba823fb6ff71cd 100644
+--- a/src/overrides/PageTitle.astro
++++ b/src/overrides/PageTitle.astro
+@@ -11,7 +11,7 @@ const {
+ {
+   template === 'doc' && (
+     <div class="breadcrumb">
+-      <div class="truncate">Docs</div>
++      <div class="truncate">{Astro.locals.t('theme-black.links.doc')}</div>
+       <svg
+         xmlns="http://www.w3.org/2000/svg"
+         width="24"
