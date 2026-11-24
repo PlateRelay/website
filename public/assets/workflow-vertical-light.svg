@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 460" width="320" height="460" role="img" aria-label="PlateRelay 核心业务流程">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .l { text-anchor: start; }
+  </style>
+
+  <!-- Nodes -->
+  <rect x="16" y="16" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="40" font-size="14" font-weight="500" fill="#1f2937">提交打印文件</text>
+  <rect x="16" y="92" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="116" font-size="14" font-weight="500" fill="#1f2937">人工审核</text>
+  <rect x="16" y="168" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="192" font-size="14" font-weight="500" fill="#1f2937">队列调度</text>
+  <rect x="16" y="244" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="268" font-size="14" font-weight="500" fill="#1f2937">派单打印</text>
+  <rect x="16" y="320" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="344" font-size="14" font-weight="500" fill="#1f2937">入库与清床确认</text>
+  <rect x="16" y="396" width="196" height="48" rx="8" fill="#e8f0fe" stroke="#4b7cf3" stroke-width="1.75" />
+  <text x="114" y="420" font-size="14" font-weight="500" fill="#1f2937">凭码核销取件</text>
+
+  <!-- Forward arrows -->
+  <g fill="none" stroke="#9ca3af" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 114 70 L 114 86 M 108 80 L 114 86 L 120 80" />
+    <path d="M 114 146 L 114 162 M 108 156 L 114 162 L 120 156" />
+    <path d="M 114 222 L 114 238 M 108 232 L 114 238 L 120 232" />
+    <path d="M 114 298 L 114 314 M 108 308 L 114 314 L 120 308" />
+    <path d="M 114 374 L 114 390 M 108 384 L 114 390 L 120 384" />
+
+    <!-- Release printer loop -->
+    <path d="M 218 344 L 230 344 Q 238 344 238 336 L 238 200 Q 238 192 230 192 L 218 192 M 224 186 L 218 192 L 224 198" />
+  </g>
+
+  <text class="l" x="246" y="268" font-size="13" fill="#374151">释放打印机</text>
+</svg>

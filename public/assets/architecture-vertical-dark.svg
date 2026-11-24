@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 336 424" width="336" height="424" role="img" aria-label="PlateRelay 系统架构">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .l { text-anchor: start; }
+  </style>
+
+  <!-- Main vertical nodes -->
+  <rect x="16" y="16" width="140" height="50" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="86" y="41" font-size="14" font-weight="500" fill="#ffffff">浏览器</text>
+  <rect x="16" y="122" width="140" height="66" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="86" y="155" font-size="14" font-weight="500" fill="#ffffff">面板端</text>
+  <rect x="16" y="252" width="140" height="50" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="86" y="277" font-size="14" font-weight="500" fill="#ffffff">Daemon</text>
+  <rect x="16" y="358" width="140" height="50" rx="8" fill="#172554" stroke="#60a5fa" stroke-width="1.75" />
+  <text x="86" y="383" font-size="14" font-weight="500" fill="#ffffff">3D 打印机</text>
+
+  <!-- Arrows -->
+  <g fill="none" stroke="#94a3b8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 86 72 L 86 116 M 80 78 L 86 72 L 92 78 M 80 110 L 86 116 L 92 110" />
+    <path d="M 86 194 L 86 246 M 80 200 L 86 194 L 92 200 M 80 240 L 86 246 L 92 240" />
+    <path d="M 86 308 L 86 352 M 80 314 L 86 308 L 92 314 M 80 346 L 86 352 L 92 346" />
+
+    <!-- Panel <-> PostgreSQL / S3 -->
+    <path d="M 162 155 L 196 155 M 168 149 L 162 155 L 168 161 M 190 149 L 196 155 L 190 161" />
+  </g>
+
+  <!-- Edge labels -->
+  <text class="l" x="100" y="94" font-size="12.5" fill="#ffffff">HTTPS / SSE</text>
+  <text class="l" x="100" y="211.5" font-size="12.5" fill="#ffffff">WSS</text>
+  <text class="l" x="100" y="228.5" font-size="12.5" fill="#ffffff">(Daemon 主动连接)</text>
+  <text class="l" x="100" y="330" font-size="12.5" fill="#ffffff">设备协议</text>
+
+  <!-- Storage cylinder -->
+  <path d="M 204 129 L 204 181 A 60 11 0 0 0 324 181 L 324 129 Z" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <ellipse cx="264" cy="129" rx="60" ry="11" fill="#143326" stroke="#4ade80" stroke-width="1.75" />
+  <text x="264" y="163" font-size="13" font-weight="500" fill="#ffffff">PostgreSQL</text>
+  <text x="264" y="180" font-size="13" font-weight="500" fill="#ffffff">/ S3</text>
+</svg>

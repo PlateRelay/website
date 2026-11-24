@@ -18,15 +18,15 @@ export default defineConfig({
         starlightThemeBlack({
           navLinks: [
             {
-              label: 'Home',
+              label: { en: 'Home', 'zh-cn': '首页', 'zh-CN': '首页' },
               link: '/',
             },
             {
-              label: 'Docs',
+              label: { en: 'Docs', 'zh-cn': '文档', 'zh-CN': '文档' },
               link: '/docs/overview/',
             },
             {
-              label: 'Architecture',
+              label: { en: 'Architecture', 'zh-cn': '架构', 'zh-CN': '架构' },
               link: '/docs/architecture/',
             },
             {
