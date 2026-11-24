@@ -1,238 +1,58 @@
 ---
 import ProductPreview from './ProductPreview';
-import QuickStartBlock from './QuickStartBlock';
+import { landing, type Lang } from '../i18n/landing';
 
 interface Props {
-  lang: 'en' | 'zh-cn';
+  lang: Lang;
 }
 
 const { lang } = Astro.props;
 const isZh = lang === 'zh-cn';
+const t = landing[lang];
 const docsBase = isZh ? '/zh-cn/docs' : '/docs';
+const svgSuffix = isZh ? '' : '-en';
+const githubUrl = 'https://github.com/PlateRelay/PlateRelay';
 
-const t = isZh
-  ? {
-      statusTag: '早期开发阶段 · GPL-3.0-only · 欢迎贡献',
-      headline: '面向公共共享场景的\n自托管 3D 打印管理平台',
-      subtitle:
-        '面向黑客松、创客空间、高校实验室等共享打印机场景，提供多机集中管控以及可审计的审核、调度与凭码交付流程，将用户与物理设备隔离。',
-      ctaPrimary: '阅读文档',
-      ctaGithub: '查看 GitHub',
-      whyEyebrow: '为什么需要 PlateRelay',
-      whyTitle: '公共共享打印资源，不能直接套用私有打印农场',
-      whyCards: [
-        {
-          icon: 'pool',
-          title: '多方共享的公共打印池',
-          desc: '面向多方共享的公共打印资源，支持多角色协作、公告通知与规则化队列管理，满足各类共享打印空间的治理需求。',
-          contrast: '传统打印农场通常假设单方私有集群，缺少跨团队共享边界。',
-        },
-        {
-          icon: 'shield',
-          title: '用户与物理打印机彻底隔离',
-          desc: '普通用户只提交 .gcode.3mf 与凭码取件，全程无法接触打印机局域网、访问码或设备底层控制页面。',
-          contrast: '传统方案往往让使用者直接登录打印机控制端。',
-        },
-        {
-          icon: 'audit',
-          title: '人工审核门槛 + 分权限审计日志',
-          desc: '提交的文件先经 Worker 解析校验再入审核队列，支持驳回重提与版本差异对比，所有操作按权限可审计。',
-          contrast: '传统排产直接开打，缺少审核把关与状态变更追溯。',
-        },
-        {
-          icon: 'lock',
-          title: '入库并确认清床后才释放设备',
-          desc: '打印完成只代表零件就绪；只有现场人员取件入库并确认热床清空后，打印机才释放给队列里的下一单。',
-          contrast: '传统流程打印结束即释放，极易在公共场地发生撞件或错拿。',
-        },
-      ],
-      archEyebrow: '核心流程与架构',
-      archTitle: '6 步交付闭环，与「面板 + 局域网 Daemon」分离部署',
-      steps: [
-        { n: '01', label: '提交 .gcode.3mf' },
-        { n: '02', label: '人工审核' },
-        { n: '03', label: '规则队列调度' },
-        { n: '04', label: '内网 Daemon 派单' },
-        { n: '05', label: '入库并确认清床' },
-        { n: '06', label: '凭码核销取件' },
-      ],
-      loopNote: '清床闭环约束：只有完成第 05 步「入库并确认清床」，设备才会释放回第 03 步的「规则队列调度」承接下一单。',
-      archCards: [
-        {
-          tag: 'apps/server · apps/web · packages/shared',
-          title: '中心管理面板（Panel）',
-          desc: '负责账户鉴权、Worker 线程切片解析校验、审核工作台、队列调度、SSE 实时推送与取件核销，通过 OpenAPI 与客户端保持强类型一致。',
-          chips: ['NestJS', 'React', 'PostgreSQL', 'OpenAPI'],
-          href: `${docsBase}/server/`,
-          link: '查看面板后端文档 →',
-        },
-        {
-          tag: 'daemon/src/platerelay_daemon · platerelay_sim',
-          title: '局域网守护进程（Daemon）',
-          desc: '部署于打印机所在局域网并主动通过 WebSocket 连接面板，无需开放任何内网入站端口；内置高倍速模拟打印机用于三端本地联调。',
-          chips: ['Python 3.12', '主动 WSS', 'SQLite Outbox', 'RSA-OAEP'],
-          href: `${docsBase}/daemon/`,
-          link: '查看 Daemon 与模拟器文档 →',
-        },
-      ],
-      quickEyebrow: '本地开发体验',
-      quickTitle: '默认内置 PGlite 与本地存储，无需外部数据库',
-      quickDesc:
-        '项目暂未发布生产安装包与 Docker Compose，现阶段可通过本地环境预览前端原型，或配合内置模拟打印机完成三端联调。',
-      quickLink: '查看完整快速开始与测试命令 →',
-      roadmapTitle: '开发路线图',
-      roadmapDoneLabel: '已完成',
-      roadmap: [
-        {
-          done: true,
-          title: '核心契约与基础框架',
-          desc: 'OpenAPI 与 daemon 通信协议、面板后端核心工作流、守护进程框架与内置模拟打印机。',
-        },
-        {
-          done: false,
-          title: 'v1 完整可用',
-          desc: '前端契约适配、完整文件安全校验、拓竹设备驱动、媒体能力、外部登录与通知及 Docker Compose。',
-        },
-        {
-          done: false,
-          title: '多品牌设备驱动',
-          desc: '扩展 Klipper / Moonraker、PrusaLink、OctoPrint 等主流固件与协议支持。',
-        },
-        {
-          done: false,
-          title: '场地运营与开放集成',
-          desc: '暂存库位与耗材库存管理、公开 REST API、受限个人访问令牌（PAT）与事件 Webhook。',
-        },
-      ],
-    }
-  : {
-      statusTag: 'Early Development · GPL-3.0-only · Open Source',
-      headline: 'Self-hosted 3D printing\nfor shared public fleets',
-      subtitle:
-        'For shared-printer environments such as hackathons, makerspaces, and university labs—combining centralized multi-printer control with auditable review, scheduling, hardware isolation, and code-verified pickup.',
-      ctaPrimary: 'Read the Docs',
-      ctaGithub: 'View on GitHub',
-      whyEyebrow: 'Why PlateRelay',
-      whyTitle: 'Shared printing spaces need stronger boundaries than private print farms',
-      whyCards: [
-        {
-          icon: 'pool',
-          title: 'Multi-user shared printing pool',
-          desc: 'Built for shared public printing resources with structured queues, announcements, and multi-role coordination across users and operators.',
-          contrast: 'Traditional print farms assume a single-owner private fleet with trusted direct access.',
-        },
-        {
-          icon: 'shield',
-          title: 'Users isolated from physical hardware',
-          desc: 'Regular users upload .gcode.3mf files and collect finished parts by code—never touching printer LANs, access codes, or device UIs.',
-          contrast: 'Traditional tools expose direct printer controls to users.',
-        },
-        {
-          icon: 'audit',
-          title: 'Manual review gate & scoped audit logs',
-          desc: 'Worker threads parse and check every file before review, supporting revision diffs and permission-controlled audit trails.',
-          contrast: 'Traditional dispatch sends jobs directly with minimal review or traceability.',
-        },
-        {
-          icon: 'lock',
-          title: 'Bed-clearance gate before printer release',
-          desc: 'Finishing a print does not unlock the printer. Staff shelve the part and confirm an empty bed before the next job dispatches.',
-          contrast: 'Traditional tools release printers on finish, risking build-plate collisions.',
-        },
-      ],
-      archEyebrow: 'Workflow & Architecture',
-      archTitle: '6-stage fulfillment loop over a split Panel + LAN Daemon architecture',
-      steps: [
-        { n: '01', label: 'Submit .gcode.3mf' },
-        { n: '02', label: 'Manual Review' },
-        { n: '03', label: 'Queue Scheduling' },
-        { n: '04', label: 'Daemon Dispatch' },
-        { n: '05', label: 'Shelve & Bed Clear' },
-        { n: '06', label: 'Code Pickup' },
-      ],
-      loopNote: 'Bed-clearance release loop: step 05 must confirm physical bed clearance before releasing the printer back to step 03 Queue Scheduling.',
-      archCards: [
-        {
-          tag: 'apps/server · apps/web · packages/shared',
-          title: 'Central Management Panel',
-          desc: 'Handles authentication, worker-thread .gcode.3mf parsing, review queues, job dispatch, SSE live streams, and pickup verification from shared OpenAPI contracts.',
-          chips: ['NestJS', 'React', 'PostgreSQL', 'OpenAPI'],
-          href: `${docsBase}/server/`,
-          link: 'Panel Server docs →',
-        },
-        {
-          tag: 'daemon/src/platerelay_daemon · platerelay_sim',
-          title: 'Outbound LAN Daemon',
-          desc: 'Runs inside the printer LAN and connects outbound over WebSocket—zero inbound firewall ports needed. Ships with a built-in simulated printer for local testing.',
-          chips: ['Python 3.12', 'Outbound WSS', 'SQLite Outbox', 'RSA-OAEP'],
-          href: `${docsBase}/daemon/`,
-          link: 'Daemon & Simulator docs →',
-        },
-      ],
-      quickEyebrow: 'Local Development',
-      quickTitle: 'Zero external services needed to try it locally',
-      quickDesc:
-        'Production packages and Docker Compose are not published yet. Local development defaults to embedded PGlite and local storage, with a high-speed simulated printer included.',
-      quickLink: 'Read Getting Started & test commands →',
-      roadmapTitle: 'Roadmap',
-      roadmapDoneLabel: 'Done',
-      roadmap: [
-        {
-          done: true,
-          title: 'Core Contracts & Foundation',
-          desc: 'OpenAPI & daemon protocol schemas, core backend workflow engine, daemon framework, and built-in simulated printer.',
-        },
-        {
-          done: false,
-          title: 'v1 Release',
-          desc: 'Web contract integration, complete file safety validation, Bambu Lab driver, media pipeline, external auth & Docker Compose.',
-        },
-        {
-          done: false,
-          title: 'Multi-Brand Printer Drivers',
-          desc: 'Extend adapter support for Klipper / Moonraker, PrusaLink, and OctoPrint fleets.',
-        },
-        {
-          done: false,
-          title: 'Operations & Open Integrations',
-          desc: 'Staging shelf & filament inventory management, scoped PATs, event webhooks, and external portal adapters.',
-        },
-      ],
-    };
+const eyebrowClass = ['text-xs font-semibold tracking-wider', { uppercase: !isZh }];
+const cardClass =
+  'rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6 transition-colors duration-200 hover:border-[var(--pr-line2)]';
 ---
 
-<!-- Section 1: Editorial Hero + Faithful PlateRelay UI Preview -->
+<!-- Hero + product preview -->
 <section class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
   <div class="mx-auto max-w-[1120px] px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20">
     <div class="mx-auto max-w-3xl text-center">
       <div class="pr-fade-up inline-flex items-center gap-2 rounded-full border border-[var(--pr-line)] bg-[var(--pr-sub)] px-3 py-1 text-xs font-medium text-[var(--pr-fg2)]">
         <span class="pr-breathe h-1.5 w-1.5 rounded-full" style="background: var(--pr-ok-d)"></span>
-        <span>{t.statusTag}</span>
+        <span>{t.hero.status}</span>
       </div>
 
       <h1 class="pr-fade-up pr-delay-1 mt-5 whitespace-pre-line text-3xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-5xl sm:leading-[1.12]">
-        {t.headline}
+        {t.hero.title}
       </h1>
 
       <p class="pr-fade-up pr-delay-2 mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--pr-muted)] sm:text-base">
-        {t.subtitle}
+        {t.hero.subtitle}
       </p>
 
       <div class="pr-fade-up pr-delay-3 mt-7 flex flex-wrap items-center justify-center gap-3">
         <a
-          href={`${docsBase}/overview/`}
+          href={`${docsBase}/getting-started/`}
           class="group inline-flex h-10 items-center gap-2 rounded-full bg-[var(--pr-ink)] px-5 text-sm font-semibold text-[var(--pr-ink-fg)] transition-opacity hover:opacity-90"
         >
-          <span>{t.ctaPrimary}</span>
+          <span>{t.hero.primary}</span>
           <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
         </a>
         <a
-          href="https://github.com/PlateRelay/PlateRelay"
+          href={githubUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex h-10 items-center rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-5 text-sm font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)]"
+          class="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--pr-line)] bg-[var(--pr-card)] px-5 text-sm font-semibold text-[var(--pr-fg)] transition-colors hover:border-[var(--pr-line2)]"
         >
-          {t.ctaGithub}
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.26 5.67.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.67.79.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+          </svg>
+          <span>{t.hero.secondary}</span>
         </a>
       </div>
     </div>
@@ -243,204 +63,179 @@ const t = isZh
   </div>
 </section>
 
-<!-- Section 2: Why PlateRelay (2x2 Airy Card Grid) -->
-<section class="border-b border-[var(--pr-line)] bg-[var(--pr-band)]">
+<!-- Workflow -->
+<section id="workflow" class="border-b border-[var(--pr-line)] bg-[var(--pr-band)]">
   <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
     <div class="max-w-3xl">
-      <div class:list={["text-xs font-semibold tracking-wider", { uppercase: !isZh }]} style="color: var(--pr-busy-t)">
-        {t.whyEyebrow}
-      </div>
-      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">
-        {t.whyTitle}
-      </h2>
+      <div class:list={eyebrowClass} style="color: var(--pr-busy-t)">{t.workflow.eyebrow}</div>
+      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">{t.workflow.title}</h2>
+      <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)] sm:text-base">{t.workflow.subtitle}</p>
+    </div>
+
+    <div class="pr-noscrollbar mt-8 overflow-x-auto rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 sm:p-6">
+      <img
+        class="pr-theme-light mx-auto h-auto w-full min-w-[720px] max-w-[964px]"
+        src={`/assets/workflow${svgSuffix}-light.svg`}
+        alt={t.workflow.alt}
+        width="964"
+        height="136"
+        loading="lazy"
+      />
+      <img
+        class="pr-theme-dark mx-auto h-auto w-full min-w-[720px] max-w-[964px]"
+        src={`/assets/workflow${svgSuffix}-dark.svg`}
+        alt={t.workflow.alt}
+        width="964"
+        height="136"
+        loading="lazy"
+      />
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
+  <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
+    <div class="max-w-3xl">
+      <div class:list={eyebrowClass} style="color: var(--pr-busy-t)">{t.features.eyebrow}</div>
+      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">{t.features.title}</h2>
     </div>
 
     <div class="mt-8 grid gap-5 md:grid-cols-2">
-      {t.whyCards.map((card) => (
-        <div class="flex flex-col justify-between rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
-          <div>
-            <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--pr-line)] bg-[var(--pr-sub)] text-[var(--pr-fg)]">
-              {card.icon === 'pool' && (
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              )}
-              {card.icon === 'shield' && (
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
-              )}
-              {card.icon === 'audit' && (
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                  <path d="m9 14 2 2 4-4" />
-                </svg>
-              )}
-              {card.icon === 'lock' && (
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              )}
-            </div>
-
-            <h3 class="mt-4 text-base font-semibold text-[var(--pr-fg)]">{card.title}</h3>
-            <p class="mt-2 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
+      {t.features.items.map((card) => (
+        <div class={cardClass}>
+          <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--pr-line)] bg-[var(--pr-sub)] text-[var(--pr-fg)]">
+            {card.icon === 'pool' && (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            )}
+            {card.icon === 'shield' && (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            )}
+            {card.icon === 'audit' && (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <path d="m9 14 2 2 4-4" />
+              </svg>
+            )}
+            {card.icon === 'lock' && (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            )}
           </div>
-
-          <div class="mt-5 border-t border-[var(--pr-line)] pt-3.5 text-xs text-[var(--pr-faint)]">
-            {card.contrast}
-          </div>
+          <h3 class="mt-4 text-base font-semibold text-[var(--pr-fg)]">{card.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
         </div>
       ))}
     </div>
   </div>
 </section>
 
-<!-- Section 3: 6-Stage Workflow & Split Architecture -->
-<section id="architecture" class="border-b border-[var(--pr-line)] bg-[var(--pr-bg)]">
+<!-- Architecture -->
+<section id="architecture" class="border-b border-[var(--pr-line)] bg-[var(--pr-band)]">
   <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
     <div class="max-w-3xl">
-      <div class:list={["text-xs font-semibold tracking-wider", { uppercase: !isZh }]} style="color: var(--pr-busy-t)">
-        {t.archEyebrow}
-      </div>
-      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">
-        {t.archTitle}
-      </h2>
+      <div class:list={eyebrowClass} style="color: var(--pr-busy-t)">{t.architecture.eyebrow}</div>
+      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">{t.architecture.title}</h2>
+      <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)] sm:text-base">{t.architecture.subtitle}</p>
     </div>
 
-    <!-- 6 Standalone Rounded Step Cards -->
-    <ol class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      {t.steps.map((step) => (
-        <li class="flex flex-col justify-between gap-2.5 rounded-xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
-          <span
-            class="font-mono text-xs font-semibold"
-            style={step.n === '05' ? 'color: var(--pr-busy-t)' : 'color: var(--pr-faint)'}
-          >
-            {step.n}
-          </span>
-          <span class="text-[13px] font-semibold leading-snug text-[var(--pr-fg)]">
-            {step.label}
-          </span>
+    <div class="pr-noscrollbar mt-8 overflow-x-auto rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-4 sm:p-6">
+      <img
+        class="pr-theme-light mx-auto h-auto w-full min-w-[640px] max-w-[964px]"
+        src={`/assets/architecture${svgSuffix}-light.svg`}
+        alt={t.architecture.alt}
+        width="964"
+        height="252"
+        loading="lazy"
+      />
+      <img
+        class="pr-theme-dark mx-auto h-auto w-full min-w-[640px] max-w-[964px]"
+        src={`/assets/architecture${svgSuffix}-dark.svg`}
+        alt={t.architecture.alt}
+        width="964"
+        height="252"
+        loading="lazy"
+      />
+    </div>
+
+    <div class="mt-5 grid gap-5 md:grid-cols-3">
+      {t.architecture.items.map((item) => (
+        <div class={cardClass}>
+          <h3 class="text-base font-semibold text-[var(--pr-fg)]">{item.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--pr-muted)]">{item.desc}</p>
+        </div>
+      ))}
+    </div>
+
+    <a
+      href={`${docsBase}/architecture/`}
+      class="group mt-6 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+      style="color: var(--pr-busy-t)"
+    >
+      <span>{t.architecture.link}</span>
+      <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+    </a>
+  </div>
+</section>
+
+<!-- Roadmap -->
+<section id="roadmap" class="bg-[var(--pr-bg)]">
+  <div data-reveal class="pr-reveal mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
+    <div class="max-w-3xl">
+      {t.roadmap.eyebrow && <div class:list={eyebrowClass} style="color: var(--pr-busy-t)">{t.roadmap.eyebrow}</div>}
+      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)] sm:text-3xl">{t.roadmap.title}</h2>
+      <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)] sm:text-base">{t.roadmap.subtitle}</p>
+    </div>
+
+    <ol class="mt-8 divide-y divide-[var(--pr-line)] rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
+      {t.roadmap.items.map((item) => (
+        <li class="flex items-start gap-3.5 p-5">
+          {item.done ? (
+            <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style="background: var(--pr-ok-s); color: var(--pr-ok-t);">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </span>
+          ) : (
+            <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pr-sub)] text-[var(--pr-muted)]">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="7" />
+              </svg>
+            </span>
+          )}
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm font-semibold text-[var(--pr-fg)]">{item.title}</h3>
+              {item.done && (
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold" style="background: var(--pr-ok-s); color: var(--pr-ok-t);">
+                  {t.roadmap.doneLabel}
+                </span>
+              )}
+            </div>
+            <p class="mt-1 text-sm leading-relaxed text-[var(--pr-muted)]">{item.desc}</p>
+          </div>
         </li>
       ))}
     </ol>
 
-    <!-- Bed-Clearance Release Loop Callout -->
-    <div
-      class="mt-3 flex items-center gap-2.5 rounded-xl border border-[var(--pr-line)] px-4 py-3 text-xs font-medium"
-      style="background: var(--pr-busy-s); color: var(--pr-busy-t)"
+    <a
+      href={`${docsBase}/getting-started/`}
+      class="group mt-6 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+      style="color: var(--pr-busy-t)"
     >
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-        <path d="M3 3v5h5" />
-      </svg>
-      <span>{t.loopNote}</span>
-    </div>
-
-    <!-- Panel vs Outbound LAN Daemon -->
-    <div class="mt-6 grid gap-5 md:grid-cols-2">
-      {t.archCards.map((card) => (
-        <div class="flex flex-col justify-between rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--pr-line2)]">
-          <div>
-            <div class="font-mono text-[11px] text-[var(--pr-muted)]">{card.tag}</div>
-            <h3 class="mt-2 text-lg font-bold tracking-tight text-[var(--pr-fg)]">
-              {card.title}
-            </h3>
-            <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)]">{card.desc}</p>
-            <div class="mt-4 flex flex-wrap gap-1.5">
-              {card.chips.map((chip) => (
-                <span class="rounded-md border border-[var(--pr-line)] bg-[var(--pr-sub)] px-2 py-0.5 font-mono text-[11px] text-[var(--pr-fg2)]">
-                  {chip}
-                </span>
-              ))}
-            </div>
-          </div>
-          <a
-            href={card.href}
-            class="group mt-5 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-            style="color: var(--pr-busy-t)"
-          >
-            <span>{card.link.replace(/\s*→$/, '')}</span>
-            <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-          </a>
-        </div>
-      ))}
-    </div>
-  </div>
-</section>
-
-<!-- Section 4: Local Quick Start & Roadmap -->
-<section id="roadmap" class="bg-[var(--pr-band)]">
-  <div data-reveal class="pr-reveal mx-auto grid max-w-[1120px] gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-12">
-    <div class="min-w-0 lg:col-span-6">
-      <div class:list={["text-xs font-semibold tracking-wider", { uppercase: !isZh }]} style="color: var(--pr-busy-t)">
-        {t.quickEyebrow}
-      </div>
-      <h2 class="mt-2 text-pretty text-2xl font-bold tracking-tight text-[var(--pr-fg)]">
-        {t.quickTitle}
-      </h2>
-      <p class="mt-2.5 text-sm leading-relaxed text-[var(--pr-muted)]">{t.quickDesc}</p>
-
-      <div class="mt-5">
-        <QuickStartBlock client:visible lang={lang} />
-      </div>
-
-      <a
-        href={`${docsBase}/getting-started/`}
-        class="group mt-4 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-        style="color: var(--pr-busy-t)"
-      >
-        <span>{t.quickLink.replace(/\s*→$/, '')}</span>
-        <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-      </a>
-    </div>
-
-    <div class="min-w-0 lg:col-span-6">
-      <div class:list={["text-xs font-semibold tracking-wider text-[var(--pr-muted)]", { uppercase: !isZh }]}>
-        {t.roadmapTitle}
-      </div>
-      <div class="mt-5 divide-y divide-[var(--pr-line)] rounded-2xl border border-[var(--pr-line)] bg-[var(--pr-card)]">
-        {t.roadmap.map((item) => (
-          <div class="flex items-start gap-3.5 p-5">
-            {item.done ? (
-              <span
-                class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full"
-                style="background: var(--pr-ok-s); color: var(--pr-ok-t);"
-              >
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </span>
-            ) : (
-              <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pr-sub)] text-[var(--pr-faint)]">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <circle cx="12" cy="12" r="7" />
-                </svg>
-              </span>
-            )}
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3 class="text-sm font-semibold text-[var(--pr-fg)]">{item.title}</h3>
-                {item.done && (
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    style="background: var(--pr-ok-s); color: var(--pr-ok-t);"
-                  >
-                    {t.roadmapDoneLabel}
-                  </span>
-                )}
-              </div>
-              <p class="mt-1 text-xs leading-relaxed text-[var(--pr-muted)]">{item.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      <span>{t.roadmap.link}</span>
+      <span aria-hidden="true" class="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+    </a>
   </div>
 </section>

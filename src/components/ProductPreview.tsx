@@ -204,7 +204,7 @@ const SCREEN_DATA = {
       submittedToast: (file: string) => `Worker validated ${file} — queued for review`,
     },
     printersHeading: 'Printers',
-    printersCount: '11',
+    printersCount: '3',
     consoleActions: {
       reloadBtn: 'Reload',
       clearBedBtn: 'Confirm Clear',
@@ -440,7 +440,7 @@ const SCREEN_DATA = {
       submittedToast: (file: string) => `Worker 已完成 ${file} 解析校验并入审核队列`,
     },
     printersHeading: '打印机',
-    printersCount: '11',
+    printersCount: '3',
     consoleActions: {
       reloadBtn: '补料恢复',
       clearBedBtn: '确认清床',

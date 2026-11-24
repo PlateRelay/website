@@ -433,3 +433,13 @@ html.pr-js .pr-reveal.is-visible {
 .pr-noscrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.pr-theme-dark {
+  display: none;
+}
+:root[data-theme='dark'] .pr-theme-light {
+  display: none;
+}
+:root[data-theme='dark'] .pr-theme-dark {
+  display: block;
+}
